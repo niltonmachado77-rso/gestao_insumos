@@ -18,18 +18,18 @@ function doGet(e) {
   const action = e?.parameter?.action || "";
   
   if (action === "getEscolas") {
-    return jsonOutput(getEscolas());
+    return jsonOutput(getEscolas(), e);
   } else if (action === "getConfig") {
-    return jsonOutput(getConfiguracoes());
+    return jsonOutput(getConfiguracoes(), e);
   } else if (action === "getPendentes") {
-    return jsonOutput(getSolicitacoesPendentes());
+    return jsonOutput(getSolicitacoesPendentes(), e);
   } else if (action === "getEntregas") {
     const escola = e?.parameter?.escola || "";
-    return jsonOutput(getEntregasPorEscola(escola));
+    return jsonOutput(getEntregasPorEscola(escola), e);
   } else if (action === "getEstoque") {
-    return jsonOutput(getEstoqueInsumos());
+    return jsonOutput(getEstoqueInsumos(), e);
   } else if (action === "getLogs") {
-    return jsonOutput(getLogs());
+    return jsonOutput(getLogs(), e);
   } else {
     return HtmlService.createHtmlOutput(
       '<h2>Sistema de Gestão de Insumos - API</h2><p>Use os parâmetros: ?action=getEscolas, getConfig, getPendentes, getEntregas&escola=NOME, getEstoque, getLogs</p>'
@@ -59,7 +59,13 @@ function doPost(e) {
   }
 }
 
-function jsonOutput(data) {
+function jsonOutput(data, e) {
+  const callback = e?.parameter?.callback || "";
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + "(" + JSON.stringify(data) + ")")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
