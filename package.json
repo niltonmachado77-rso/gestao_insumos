@@ -1,0 +1,20 @@
+{
+  "name": "gestao_insumos",
+  "version": "3.0.0",
+  "description": "Sistema de Gestão de Insumos e Manutenção - Secretaria de Educação de Remanso",
+  "main": "gestao_insumos_v3.html",
+  "scripts": {
+    "start": "npx live-server --port=5500 --open=gestao_insumos_v3.html",
+    "dev": "npx live-server --port=5500 --open=gestao_insumos_v3.html --no-browser"
+  },
+  "keywords": [
+    "gestao",
+    "insumos",
+    "educacao",
+    "remanso"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
