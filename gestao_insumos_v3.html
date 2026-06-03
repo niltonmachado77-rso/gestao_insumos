@@ -256,11 +256,70 @@ function apiPost(action, payload, cb){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action:action,payload:payload})
   }).then(function(r){
-    // no-cors mode nao permite ler resposta, assumimos sucesso
     if(cb)cb(null,{success:true});
   }).catch(function(err){
     showAlert('Erro ao comunicar com a planilha: '+err.message,'err');
     if(cb)cb(err);
+  });
+}
+
+// API - Buscar dados da planilha Google Sheets
+function apiGet(action, cb){
+  var url=CONFIG.WEB_APP_URL;
+  if(!url){return}
+  // Usar JSONP para contornar CORS no GET
+  var script=document.createElement('script');
+  var callbackName='jsonp_'+Date.now();
+  window[callbackName]=function(data){
+    delete window[callbackName];
+    document.body.removeChild(script);
+    if(cb)cb(null,data);
+  };
+  script.src=url+'?action='+action+'&callback='+callbackName;
+  script.onerror=function(){
+    delete window[callbackName];
+    document.body.removeChild(script);
+    if(cb)cb('Erro ao buscar dados');
+  };
+  document.body.appendChild(script);
+}
+
+function loadPendentesDaAPI(){
+  apiGet('getPendentes',function(err,data){
+    if(err||!data||!Array.isArray(data))return;
+    // Mapear dados da planilha para formato local
+    var pendentes=data.map(function(row){
+      var items=[];
+      if(row.tipo==='INSUMO'&&row.itens){
+        var partes=row.itens.split(' | ');
+        partes.forEach(function(p){
+          var match=p.match(/(.+?):\s*(.+)/);
+          if(match){
+            var insumos=match[2].split(',').map(function(s){
+              var x=s.trim().match(/(.+?)\s*x(\d+)/);
+              return x?{label:x[1].trim(),qty:parseInt(x[2])||1}:{label:s.trim(),qty:1};
+            });
+            items.push({printer:match[1].trim(),insumos:insumos,obs:''});
+          }
+        });
+      }
+      return{
+        id:row.id?parseInt(row.id.replace(/\D/g,''))||Date.now():Date.now(),
+        escola:row.escola||'',
+        nome:row.solicitante||'',
+        data:row.data||'',
+        items:items.length?items:[{printer:row.equipamento||row.tipo||'',insumos:[{label:row.itens||'',qty:1}],obs:''}],
+        status:row.status==='ENTREGUE'?'entregue':'pendente'
+      };
+    });
+    // Adicionar ao array sols (evitar duplicatas)
+    pendentes.forEach(function(p){
+      var exists=sols.some(function(s){return s.id===p.id});
+      if(!exists)sols.unshift(p);
+    });
+    save();
+    renderPend();
+    renderSols();
   });
 }
 
@@ -588,6 +647,8 @@ function init(){
   renderSols();
   addManutItem();
   initGL();
+  // Carregar solicitacoes pendentes da planilha
+  loadPendentesDaAPI();
 }
 
 document.addEventListener('DOMContentLoaded',init);
