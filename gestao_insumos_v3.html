@@ -138,9 +138,17 @@ body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.ro
 </div></div>
 <div id="entrega-hist" style="display:none">
 <div class="back-row"><button class="btn-back" onclick="goEntregaSub('menu')"><i class="ti ti-arrow-left" style="font-size:14px" aria-hidden="true"></i></button><span class="back-title">Historico de entregas</span></div>
-<div class="card"><div class="field"><label>Selecionar escola</label><div id="sb-hist-escola"></div></div></div>
+<div class="card">
+<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:flex-end">
+<div class="field" style="margin-bottom:0"><label>Selecionar escola</label><div id="sb-hist-escola"></div></div>
+<div class="field" style="margin-bottom:0"><label>Data (dd/mm/aaaa)</label><input type="text" id="hist-data-filtro" placeholder="Opcional" maxlength="10"></div>
+<div class="field" style="margin-bottom:0"><label>Mês/Ano (mm/aaaa)</label><input type="text" id="hist-mesano-filtro" placeholder="Opcional" maxlength="7"></div>
+<button class="btn btn-ghost btn-sm" onclick="clearHistFilters()" style="height:36px"><i class="ti ti-x" style="font-size:14px" aria-hidden="true"></i> Limpar</button>
+</div>
+</div>
 <div id="hist-ultimas"></div>
 <div id="hist-result"></div>
+<div id="hist-pagination" style="text-align:center;margin-top:12px;padding:12px;border-top:1px solid var(--color-border)"></div>
 </div>
 <div id="entrega-pend" style="display:none">
 <div class="back-row"><button class="btn-back" onclick="goEntregaSub('menu')"><i class="ti ti-arrow-left" style="font-size:14px" aria-hidden="true"></i></button><span class="back-title">Solicitacoes pendentes</span></div>
@@ -204,6 +212,7 @@ var TIPOS=[TM,TI,TC,TA,TO];
 
 var curUser=null, sols=[], dels=[], manuts=[], sc=0, mc=0, authCb=null, showF=false;
 var gsi=null;
+var histPage=1, HIST_PER_PAGE=20;
 
 // Google Login
 function initGL(){
@@ -453,10 +462,17 @@ function goTab(t){
 }
 
 function goEntregaSub(sub){
+  if((sub==='hist'||sub==='pend')&&!curUser){
+    showAlert('Voce precisa fazer login para acessar estes dados.','err');
+    return;
+  }
   document.getElementById('entrega-menu').style.display=sub==='menu'?'block':'none';
   document.getElementById('entrega-hist').style.display=sub==='hist'?'block':'none';
   document.getElementById('entrega-pend').style.display=sub==='pend'?'block':'none';
-  if(sub==='hist')renderUlt();
+  if(sub==='hist'){
+    histPage=1;
+    renderUlt();
+  }
   if(sub==='pend')renderPend();
 }
 
@@ -623,10 +639,27 @@ function confirmE(id){
 function renderUlt(){
   var el=document.getElementById('hist-ultimas');
   if(dels.length===0){el.innerHTML='';return}
-  var uls=dels.slice(0,10);
+  
+  // Aplicar filtros
+  var filtered=dels.slice();
+  var escola=sbH?sbH.getValue():'';
+  var dataFiltro=document.getElementById('hist-data-filtro')?document.getElementById('hist-data-filtro').value:'';
+  var mesAnoFiltro=document.getElementById('hist-mesano-filtro')?document.getElementById('hist-mesano-filtro').value:'';
+  
+  if(escola){filtered=filtered.filter(function(e){return e.escola===escola})}
+  if(dataFiltro){filtered=filtered.filter(function(e){var d=e.entregueEm||e.data;return d===dataFiltro})}
+  if(mesAnoFiltro){filtered=filtered.filter(function(e){var d=e.entregueEm||e.data;var parts=d.split('/');var dma=parts[1]+'/'+parts[2];return dma===mesAnoFiltro})}
+  
+  // Paginação
+  var start=(histPage-1)*HIST_PER_PAGE;
+  var end=start+HIST_PER_PAGE;
+  var paged=filtered.slice(start,end);
+  
+  if(paged.length===0){el.innerHTML='<div class="empty-state">Nenhuma entrega encontrada.</div>';renderHistPag(filtered.length);return}
+  
   var html='<div class="card"><div class="card-title"><i class="ti ti-history" aria-hidden="true"></i> Ultimas entregas</div>';
-  for(var i=0;i<uls.length;i++){
-    var e=uls[i];
+  for(var i=0;i<paged.length;i++){
+    var e=paged[i];
     var its='';
     for(var j=0;j<e.items.length;j++){
       var it=e.items[j];
@@ -636,6 +669,25 @@ function renderUlt(){
   }
   html+='</div>';
   el.innerHTML=html;
+  renderHistPag(filtered.length);
+}
+
+function renderHistPag(total){
+  var el=document.getElementById('hist-pagination');
+  var totalPages=Math.ceil(total/HIST_PER_PAGE);
+  if(totalPages<=1){el.innerHTML='';return}
+  var html='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Página '+histPage+' de '+totalPages+' ('+total+' total)</div>';
+  if(histPage>1)html+='<button class="btn btn-sm btn-ghost" onclick="histPage--;renderUlt()"><i class="ti ti-arrow-left" style="font-size:14px" aria-hidden="true"></i> Anterior</button> ';
+  if(histPage<totalPages)html+='<button class="btn btn-sm btn-ghost" onclick="histPage++;renderUlt()"><i class="ti ti-arrow-right" style="font-size:14px" aria-hidden="true"></i> Proxima</button>';
+  el.innerHTML=html;
+}
+
+function clearHistFilters(){
+  if(sbH)sbH.clear();
+  document.getElementById('hist-data-filtro').value='';
+  document.getElementById('hist-mesano-filtro').value='';
+  histPage=1;
+  renderUlt();
 }
 
 function renderHist(){
@@ -703,7 +755,14 @@ function init(){
   load();
   sbS=sb('sb-solic-escola');
   sbM=sb('sb-manut-escola');
-  sbH=sb('sb-hist-escola',function(v){renderHist()});
+  sbH=sb('sb-hist-escola',function(v){histPage=1;renderUlt()});
+  
+  // Listeners para filtros de data no histórico
+  var dataFiltro=document.getElementById('hist-data-filtro');
+  var mesAnoFiltro=document.getElementById('hist-mesano-filtro');
+  if(dataFiltro){dataFiltro.addEventListener('change',function(){histPage=1;renderUlt()})}
+  if(mesAnoFiltro){mesAnoFiltro.addEventListener('change',function(){histPage=1;renderUlt()})}
+  
   renderUlt();
   goEntregaSub('menu');
   renderSols();
