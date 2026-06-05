@@ -211,6 +211,24 @@ Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-
 </div>
 <div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-ghost btn-sm" onclick="closeAuth()">Cancelar</button></div>
 </div></div>
+<div class="modal-overlay" id="registerModal">
+<div class="modal-box">
+<div class="modal-title"><i class="ti ti-user-plus" style="font-size:20px;color:var(--color-primary)" aria-hidden="true"></i> Primeiro acesso</div>
+<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Bem-vindo! Preencha seus dados para concluir o cadastro.</p>
+<div class="field">
+<label>Nome completo</label>
+<input type="text" id="reg-nome" placeholder="Seu nome completo">
+</div>
+<div class="field">
+<label>Escola / Unidade</label>
+<div id="sb-reg-escola"></div>
+</div>
+<div id="reg-err" style="font-size:12px;color:var(--color-danger);margin-bottom:8px;display:none;text-align:center"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+<button class="btn btn-ghost btn-sm" onclick="logout()">Cancelar</button>
+<button class="btn btn-primary btn-sm" onclick="completeRegistration()">Concluir cadastro</button>
+</div>
+</div></div>
 </div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
@@ -226,6 +244,7 @@ var TIPOS=[TM,TI,TC,TA,TO];
 var curUser=null, sols=[], dels=[], manuts=[], sc=0, mc=0, authCb=null, showF=false;
 var gsi=null;
 var histPage=1, HIST_PER_PAGE=20;
+var usuarios=[], sbRegEscola=null;
 
 // Google Login
 function initGL(){
@@ -305,22 +324,77 @@ function processUserData(u){
   var foto=u.picture||'';
   var coords=['tecnologiaremanso@gmail.com','nilton.machado77@gmail.com','fabio.srn@gmail.com','teste@coordenacao.local'];
   var isC=coords.indexOf(email)!==-1;
-  curUser={email:email,name:nome,role:isC?'coordenacao':'solicitante',picture:foto};
   
-  // Atualizar UI
+  // Procurar usuário cadastrado
+  var usuarioCadastrado=findUsuario(email);
+  if(usuarioCadastrado){
+    // Usuário já cadastrado
+    curUser={email:email,name:usuarioCadastrado.nome||nome,role:isC?'coordenacao':'solicitante',picture:foto,escola:usuarioCadastrado.escola};
+    updateUserUI(curUser);
+    if(isC&&authCb){authCb();authCb=null}
+  }else if(isC){
+    // Coordenador novo - permite acesso direto
+    curUser={email:email,name:nome,role:'coordenacao',picture:foto,escola:''};
+    updateUserUI(curUser);
+    if(authCb){authCb();authCb=null}
+  }else{
+    // Usuário novo - exigir cadastro
+    tempUser={email:email,nome:nome,foto:foto};
+    showRegisterModal();
+  }
+}
+
+function findUsuario(email){
+  email=email.toLowerCase().trim();
+  for(var i=0;i<usuarios.length;i++){
+    if(usuarios[i].email.toLowerCase()===email)return usuarios[i];
+  }
+  return null;
+}
+
+function showRegisterModal(){
+  document.getElementById('registerModal').classList.add('show');
+  if(!sbRegEscola){
+    sbRegEscola=sb('sb-reg-escola');
+  }
+  document.getElementById('reg-nome').value=tempUser.nome;
+  document.getElementById('reg-err').style.display='none';
+}
+
+function completeRegistration(){
+  var nome=document.getElementById('reg-nome').value.trim();
+  var escola=sbRegEscola?sbRegEscola.getValue():'';
+  var err=document.getElementById('reg-err');
+  
+  if(!nome){err.textContent='Informe seu nome.';err.style.display='block';return}
+  if(!escola){err.textContent='Selecione sua escola.';err.style.display='block';return}
+  
+  // Salvar novo usuário
+  usuarios.push({email:tempUser.email,nome:nome,escola:escola,dataCadastro:new Date().toLocaleDateString('pt-BR')});
+  save();
+  
+  // Completar login
+  curUser={email:tempUser.email,name:nome,role:'solicitante',picture:tempUser.foto,escola:escola};
+  updateUserUI(curUser);
+  document.getElementById('registerModal').classList.remove('show');
+  tempUser=null;
+}
+
+function updateUserUI(user){
   var btnContainer=document.getElementById('google-sign-in-btn');
   if(btnContainer)btnContainer.classList.add('hide');
   
   var bar=document.getElementById('userBar');
   bar.classList.add('show');
-  document.getElementById('userBarName').textContent=nome;
-  document.getElementById('userBarEmail').textContent=email;
+  document.getElementById('userBarName').textContent=user.name;
+  document.getElementById('userBarEmail').textContent=user.email;
   var av=document.getElementById('userAvatar');
-  av.innerHTML=foto?'<img src="'+foto+'" alt="Avatar">':'<i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i>';
+  av.innerHTML=user.picture?'<img src="'+user.picture+'" alt="Avatar">':'<i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i>';
   
   document.getElementById('authModal').classList.remove('show');
-  if(isC&&authCb){authCb();authCb=null}
 }
+
+var tempUser=null;
 function logout(){
   curUser=null;
   document.getElementById('userBar').classList.remove('show');
@@ -355,8 +429,8 @@ function requireAuth(cb){
 function closeAuth(){document.getElementById('authModal').classList.remove('show');authCb=null}
 
 // Storage
-function save(){try{localStorage.setItem('sols',JSON.stringify(sols));localStorage.setItem('dels',JSON.stringify(dels));localStorage.setItem('manuts',JSON.stringify(manuts))}catch(e){}}
-function load(){try{var s=localStorage.getItem('sols'),d=localStorage.getItem('dels'),m=localStorage.getItem('manuts');if(s)sols=JSON.parse(s);if(d)dels=JSON.parse(d);if(m)manuts=JSON.parse(m)}catch(e){}}
+function save(){try{localStorage.setItem('sols',JSON.stringify(sols));localStorage.setItem('dels',JSON.stringify(dels));localStorage.setItem('manuts',JSON.stringify(manuts));localStorage.setItem('usuarios',JSON.stringify(usuarios))}catch(e){}}
+function load(){try{var s=localStorage.getItem('sols'),d=localStorage.getItem('dels'),m=localStorage.getItem('manuts'),u=localStorage.getItem('usuarios');if(s)sols=JSON.parse(s);if(d)dels=JSON.parse(d);if(m)manuts=JSON.parse(m);if(u)usuarios=JSON.parse(u)}catch(e){}}
 
 // API - Enviar dados para a planilha Google Sheets
 function apiPost(action, payload, cb){
@@ -528,7 +602,14 @@ function toggleSolicView(){
   document.getElementById('solic-form-view').style.display=showF?'block':'none';
   document.getElementById('solic-list-view').style.display=showF?'none':'block';
   if(!showF)renderSols();
-  if(showF&&document.getElementById('solic-items-wrap').children.length===0)addSolicItem();
+  if(showF){
+    if(document.getElementById('solic-items-wrap').children.length===0)addSolicItem();
+    // Pré-preencher para solicitantes
+    if(curUser&&curUser.role==='solicitante'){
+      if(sbS)sbS.setValue(curUser.escola);
+      document.getElementById('solic-nome').value=curUser.name;
+    }
+  }
 }
 
 function toggleManutView(){
@@ -536,7 +617,14 @@ function toggleManutView(){
   document.getElementById('manut-form-view').style.display=manutShowForm?'block':'none';
   document.getElementById('manut-list-view').style.display=manutShowForm?'none':'block';
   if(!manutShowForm)renderManut();
-  if(manutShowForm&&document.getElementById('manut-items-wrap').children.length===0)addManutItem();
+  if(manutShowForm){
+    if(document.getElementById('manut-items-wrap').children.length===0)addManutItem();
+    // Pré-preencher para solicitantes
+    if(curUser&&curUser.role==='solicitante'){
+      if(sbM)sbM.setValue(curUser.escola);
+      document.getElementById('manut-nome').value=curUser.name;
+    }
+  }
 }
 
 function showAlert(msg,tp){
@@ -605,6 +693,13 @@ function saveCM(id){
 function submitSolic(){
   var escola=sbS?sbS.getValue():'';
   var nome=document.getElementById('solic-nome').value.trim();
+  
+  // Se for solicitante, usar dados cadastrados
+  if(curUser&&curUser.role==='solicitante'){
+    escola=curUser.escola;
+    nome=curUser.name;
+  }
+  
   if(!escola){showAlert('Selecione a escola.','err');return}
   if(!nome){showAlert('Informe o nome do solicitante.','err');return}
   var items=[];
@@ -647,10 +742,15 @@ function submitSolic(){
 
 function renderSols(){
   var el=document.getElementById('my-solics');
-  if(sols.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao registrada ainda.</div>';return}
+  // Filtrar por escola se for solicitante
+  var filtered=sols;
+  if(curUser&&curUser.role==='solicitante'&&curUser.escola){
+    filtered=sols.filter(function(s){return s.escola===curUser.escola});
+  }
+  if(filtered.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao registrada ainda.</div>';return}
   var html='';
-  for(var i=0;i<sols.length;i++){
-    var s=sols[i];
+  for(var i=0;i<filtered.length;i++){
+    var s=filtered[i];
     var its='';
     for(var j=0;j<s.items.length;j++){
       var it=s.items[j];
@@ -663,10 +763,15 @@ function renderSols(){
 
 function renderManut(){
   var el=document.getElementById('my-manuts');
-  if(manuts.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao de manutencao registrada ainda.</div>';return}
+  // Filtrar por escola se for solicitante
+  var filtered=manuts;
+  if(curUser&&curUser.role==='solicitante'&&curUser.escola){
+    filtered=manuts.filter(function(m){return m.escola===curUser.escola});
+  }
+  if(filtered.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao de manutencao registrada ainda.</div>';return}
   var html='';
-  for(var i=0;i<manuts.length;i++){
-    var m=manuts[i];
+  for(var i=0;i<filtered.length;i++){
+    var m=filtered[i];
     var its='';
     for(var j=0;j<m.items.length;j++){
       var it=m.items[j];
@@ -785,6 +890,13 @@ function renderHist(){
 function submitManut(){
   var escola=sbM?sbM.getValue():'';
   var nome=document.getElementById('manut-nome').value.trim();
+  
+  // Se for solicitante, usar dados cadastrados
+  if(curUser&&curUser.role==='solicitante'){
+    escola=curUser.escola;
+    nome=curUser.name;
+  }
+  
   if(!escola){showAlert('Selecione a escola.','err');return}
   if(!nome){showAlert('Informe o solicitante.','err');return}
   var items=[];
@@ -814,6 +926,7 @@ function submitManut(){
   });
   showAlert('Solicitacao de manutencao enviada e registrada na planilha!','ok');
   resetManut();
+  toggleManutView();
 }
 
 function resetSolic(){if(sbS)sbS.clear();document.getElementById('solic-nome').value='';document.getElementById('solic-items-wrap').innerHTML='';sc=0}
@@ -827,6 +940,7 @@ function init(){
   sbS=sb('sb-solic-escola');
   sbM=sb('sb-manut-escola');
   sbH=sb('sb-hist-escola',function(v){histPage=1;renderUlt()});
+  sbRegEscola=sb('sb-reg-escola');
   
   // Listeners para filtros de data no histórico
   var dataFiltro=document.getElementById('hist-data-filtro');
