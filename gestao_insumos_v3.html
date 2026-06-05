@@ -98,6 +98,8 @@ optgroup{font-weight:600;font-size:12px}
 .back-row .back-title{font-size:15px;font-weight:600}
 .btn-back{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:6px 10px;cursor:pointer;color:var(--color-text-secondary);display:flex;align-items:center}
 .btn-back:hover{background:var(--color-primary-light);color:var(--color-primary)}
+#google-sign-in-btn{display:block}
+#google-sign-in-btn.hide{display:none}
 .hist-item{padding:12px 0;border-bottom:1px solid var(--color-border)}
 .hist-item:last-child{border-bottom:none}
 .hist-item .hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px}
@@ -115,10 +117,13 @@ body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.ro
 <div class="app">
 <div class="app-header">
 <div><h1><i class="ti ti-printer" aria-hidden="true"></i> Gestao de Insumos</h1><div class="sub">Secretaria de Educacao de Remanso</div></div>
+<div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap">
+<div id="google-sign-in-btn"></div>
 <div class="user-bar" id="userBar">
 <div class="user-avatar" id="userAvatar"><i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i></div>
 <div class="user-info"><div class="name" id="userBarName">Usuario</div><div class="email" id="userBarEmail">email@exemplo.com</div></div>
 <button class="btn-logout" onclick="logout()"><i class="ti ti-logout" style="font-size:13px" aria-hidden="true"></i> Sair</button>
+</div>
 </div></div>
 <div id="alertEl" class="alert"></div>
 <div class="tabs">
@@ -203,28 +208,85 @@ var gsi=null;
 // Google Login
 function initGL(){
   if(typeof google==='undefined'||!google.accounts){setTimeout(initGL,500);return}
-  gsi=google.accounts.oauth2.initTokenClient({client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',scope:'email profile openid',callback:function(r){
-    if(!r||!r.access_token)return;
-    fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+r.access_token}}).then(function(rs){return rs.json()}).then(function(u){
-      if(!u||!u.email)return;
-      var email=u.email.toLowerCase().trim();
-      var nome=u.name||email.split('@')[0];
-      var foto=u.picture||'';
-      var coords=['tecnologiaremanso@gmail.com','nilton.machado77@gmail.com','fabio.srn@gmail.com'];
-      var isC=coords.indexOf(email)!==-1;
-      curUser={email:email,name:nome,role:isC?'coordenacao':'solicitante',picture:foto};
-      var bar=document.getElementById('userBar');
-      bar.classList.add('show');
-      document.getElementById('userBarName').textContent=nome;
-      document.getElementById('userBarEmail').textContent=email;
-      var av=document.getElementById('userAvatar');
-      av.innerHTML=foto?'<img src="'+foto+'" alt="Avatar">':'<i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i>';
-      document.getElementById('authModal').classList.remove('show');
-      if(isC&&authCb){authCb();authCb=null}
+  
+  // Inicializar Google Sign-In
+  google.accounts.id.initialize({
+    client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
+    callback:handleGoogleResponse
+  });
+  
+  // Renderizar botão no header
+  var btnContainer=document.getElementById('google-sign-in-btn');
+  if(btnContainer&&!curUser){
+    google.accounts.id.renderButton(btnContainer,{
+      theme:'outline',
+      size:'large',
+      text:'signin_with'
     });
-  }});
+  }
+  
+  // Manter initTokenClient para requisições de API se necessário
+  gsi=google.accounts.oauth2.initTokenClient({
+    client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
+    scope:'email profile openid',
+    callback:function(r){
+      if(!r||!r.access_token)return;
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+r.access_token}}).then(function(rs){return rs.json()}).then(function(u){
+        processUserData(u);
+      });
+    }
+  });
 }
-function logout(){curUser=null;document.getElementById('userBar').classList.remove('show');showAlert('Sessao encerrada.','ok')}
+
+// Processar resposta do Google Sign-In
+function handleGoogleResponse(response){
+  if(!response.credential)return;
+  // Decodificar JWT
+  var parts=response.credential.split('.');
+  if(parts.length!==3)return;
+  try{
+    var payload=JSON.parse(atob(parts[1]));
+    payload.picture=payload.picture||'';
+    processUserData(payload);
+  }catch(e){}
+}
+
+// Processar dados do usuário
+function processUserData(u){
+  if(!u||!u.email)return;
+  var email=u.email.toLowerCase().trim();
+  var nome=u.name||u.given_name||email.split('@')[0];
+  var foto=u.picture||'';
+  var coords=['tecnologiaremanso@gmail.com','nilton.machado77@gmail.com','fabio.srn@gmail.com'];
+  var isC=coords.indexOf(email)!==-1;
+  curUser={email:email,name:nome,role:isC?'coordenacao':'solicitante',picture:foto};
+  
+  // Atualizar UI
+  var btnContainer=document.getElementById('google-sign-in-btn');
+  if(btnContainer)btnContainer.classList.add('hide');
+  
+  var bar=document.getElementById('userBar');
+  bar.classList.add('show');
+  document.getElementById('userBarName').textContent=nome;
+  document.getElementById('userBarEmail').textContent=email;
+  var av=document.getElementById('userAvatar');
+  av.innerHTML=foto?'<img src="'+foto+'" alt="Avatar">':'<i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i>';
+  
+  document.getElementById('authModal').classList.remove('show');
+  if(isC&&authCb){authCb();authCb=null}
+}
+function logout(){
+  curUser=null;
+  document.getElementById('userBar').classList.remove('show');
+  var btnContainer=document.getElementById('google-sign-in-btn');
+  if(btnContainer)btnContainer.classList.remove('hide');
+  // Re-renderizar botão
+  if(typeof google!=='undefined'&&google.accounts){
+    btnContainer.innerHTML='';
+    google.accounts.id.renderButton(btnContainer,{theme:'outline',size:'large',text:'signin_with'});
+  }
+  showAlert('Sessao encerrada.','ok');
+}
 function requireAuth(cb){
   if(curUser&&curUser.role==='coordenacao'){cb();return}
   if(curUser&&curUser.role==='solicitante'){showAlert('Voce nao tem permissao de coordenacao.','err');return}
