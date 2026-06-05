@@ -46,7 +46,42 @@ fabio.srn@gmail.com	Fabio	COORDENADORES
 
 ---
 
-## 🚀 Como usar
+## � Configurar Google OAuth para GitHub Pages
+
+### ❌ Erro "invalid_client" ou "Erro 401"?
+
+Se você receber este erro ao clicar em **"Entrar com Google"**, é porque o domínio do GitHub Pages não está autorizado.
+
+### ✅ Solução em 5 passos:
+
+#### 1. Abra o Google Cloud Console
+- Acesse: https://console.cloud.google.com/
+- Faça login com a conta que criou o projeto
+
+#### 2. Vá para APIs & Services → Credentials
+- No menu à esquerda: **APIs & Services > Credentials**
+
+#### 3. Encontre o OAuth Client ID
+- Procure por **"OAuth 2.0 Client IDs"**
+- Clique no que diz **"Web Application"**
+- ID: `736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com`
+
+#### 4. Adicione as Origens Autorizadas
+- Na seção **"Authorized JavaScript origins"**, clique **+ Add URI**
+- Digite: `https://niltonmachado77-rso.github.io`
+
+- Na seção **"Authorized redirect URIs"**, clique **+ Add URI**  
+- Digite: `https://niltonmachado77-rso.github.io/gestao_insumos/`
+
+#### 5. Salve e Aguarde
+- Clique em **SAVE**
+- Aguarde até 10 minutos
+- Limpe cache (Ctrl+Shift+Delete) ou acesse em modo incógnito
+- Tente fazer login novamente
+
+---
+
+## �🚀 Como usar
 
 ### Opção 1 — Apenas HTML (modo local)
 1. Abra o arquivo `gestao_insumos_v3.html` no navegador

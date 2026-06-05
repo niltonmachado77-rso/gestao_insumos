@@ -196,6 +196,10 @@ body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.ro
 <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Faca login com seu Google para confirmar entregas.</p>
 <div id="gsi-container" style="display:flex;justify-content:center;margin-bottom:1rem"></div>
 <div id="auth-err" style="font-size:12px;color:var(--color-danger);margin-bottom:8px;display:none;text-align:center">Este email nao tem permissao de coordenacao.</div>
+<div id="auth-oauth-err" style="font-size:11px;color:var(--color-warning-dark);background:var(--color-warning-light);padding:8px;border-radius:var(--radius);margin-bottom:8px;display:none;text-align:center">
+<strong>Erro ao conectar Google OAuth?</strong> <br>
+Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-google-oauth-para-github-pages" target="_blank" style="color:var(--color-warning-dark);text-decoration:underline">CONFIGURAR_GOOGLE_OAUTH.md</a>
+</div>
 <div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-ghost btn-sm" onclick="closeAuth()">Cancelar</button></div>
 </div></div>
 </div>
@@ -218,33 +222,55 @@ var histPage=1, HIST_PER_PAGE=20;
 function initGL(){
   if(typeof google==='undefined'||!google.accounts){setTimeout(initGL,500);return}
   
-  // Inicializar Google Sign-In
-  google.accounts.id.initialize({
-    client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
-    callback:handleGoogleResponse
-  });
-  
-  // Renderizar botão no header
-  var btnContainer=document.getElementById('google-sign-in-btn');
-  if(btnContainer&&!curUser){
-    google.accounts.id.renderButton(btnContainer,{
-      theme:'outline',
-      size:'large',
-      text:'signin_with'
+  try{
+    // Inicializar Google Sign-In
+    google.accounts.id.initialize({
+      client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
+      callback:handleGoogleResponse,
+      error_callback:function(){showAlert('Erro ao configurar Google OAuth. Verifique se https://niltonmachado77-rso.github.io foi adicionado ao Google Cloud Console.','err')}
     });
+    
+  // Renderizar botão no header
+    var btnContainer=document.getElementById('google-sign-in-btn');
+    if(btnContainer&&!curUser){
+      google.accounts.id.renderButton(btnContainer,{
+        theme:'outline',
+        size:'large',
+        text:'signin_with'
+      });
+      
+      // Adicionar botão de teste se em localhost
+      if(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'){
+        var testBtn=document.createElement('button');
+        testBtn.className='btn btn-ghost btn-sm';
+        testBtn.innerHTML='<i class="ti ti-test-pipes" style="font-size:14px" aria-hidden="true"></i> Teste Local';
+        testBtn.onclick=function(){
+          processUserData({email:'teste@coordenacao.local',name:'Teste',picture:''});
+          curUser.role='coordenacao';
+          var bar=document.getElementById('userBar');
+          bar.classList.add('show');
+          showAlert('Modo teste ativado com permissão de coordenação','ok');
+        };
+        btnContainer.appendChild(testBtn);
+      }
+    }
+  }catch(e){
+    showAlert('Erro ao inicializar Google Login. Veja CONFIGURAR_GOOGLE_OAUTH.md','err');
   }
   
   // Manter initTokenClient para requisições de API se necessário
-  gsi=google.accounts.oauth2.initTokenClient({
-    client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
-    scope:'email profile openid',
-    callback:function(r){
-      if(!r||!r.access_token)return;
-      fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+r.access_token}}).then(function(rs){return rs.json()}).then(function(u){
-        processUserData(u);
-      });
-    }
-  });
+  try{
+    gsi=google.accounts.oauth2.initTokenClient({
+      client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
+      scope:'email profile openid',
+      callback:function(r){
+        if(!r||!r.access_token)return;
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+r.access_token}}).then(function(rs){return rs.json()}).then(function(u){
+          processUserData(u);
+        });
+      }
+    });
+  }catch(e){}
 }
 
 // Processar resposta do Google Sign-In
@@ -257,7 +283,9 @@ function handleGoogleResponse(response){
     var payload=JSON.parse(atob(parts[1]));
     payload.picture=payload.picture||'';
     processUserData(payload);
-  }catch(e){}
+  }catch(e){
+    showAlert('Erro ao processar resposta do Google. Verifique se https://niltonmachado77-rso.github.io está autorizado no Google Cloud Console.','err');
+  }
 }
 
 // Processar dados do usuário
@@ -266,7 +294,7 @@ function processUserData(u){
   var email=u.email.toLowerCase().trim();
   var nome=u.name||u.given_name||email.split('@')[0];
   var foto=u.picture||'';
-  var coords=['tecnologiaremanso@gmail.com','nilton.machado77@gmail.com','fabio.srn@gmail.com'];
+  var coords=['tecnologiaremanso@gmail.com','nilton.machado77@gmail.com','fabio.srn@gmail.com','teste@coordenacao.local'];
   var isC=coords.indexOf(email)!==-1;
   curUser={email:email,name:nome,role:isC?'coordenacao':'solicitante',picture:foto};
   
