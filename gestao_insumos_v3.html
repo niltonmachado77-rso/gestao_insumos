@@ -178,6 +178,11 @@ body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.ro
 </div>
 </div>
 <div id="scr-manut" class="screen">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+<span style="font-size:16px;font-weight:600">Solicitacoes de manutencao</span>
+<button class="btn btn-danger btn-sm" onclick="toggleManutView()"><i class="ti ti-plus" style="font-size:14px" aria-hidden="true"></i> Nova solicitacao</button>
+</div>
+<div id="manut-form-view" style="display:none">
 <div class="card"><div class="card-title"><i class="ti ti-wrench" aria-hidden="true"></i> Solicitacao de manutencao / suporte</div>
 <div class="row2">
 <div class="field"><label>Escola/Unidade</label><div id="sb-manut-escola"></div></div>
@@ -188,6 +193,10 @@ body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.ro
 <div class="footer-act">
 <button class="btn btn-ghost" onclick="resetManut()"><i class="ti ti-x" style="font-size:14px" aria-hidden="true"></i> Limpar</button>
 <button class="btn btn-danger btn-lg" onclick="submitManut()"><i class="ti ti-send" style="font-size:16px" aria-hidden="true"></i> Enviar solicitacao</button>
+</div>
+</div>
+<div id="manut-list-view">
+<div id="my-manuts"></div>
 </div>
 </div>
 <div class="modal-overlay" id="authModal">
@@ -322,6 +331,10 @@ function logout(){
     btnContainer.innerHTML='';
     google.accounts.id.renderButton(btnContainer,{theme:'outline',size:'large',text:'signin_with'});
   }
+  // Limpar dados das abas protegidas
+  document.getElementById('my-solics').innerHTML='';
+  document.getElementById('my-manuts').innerHTML='';
+  goEntregaSub('menu');
   showAlert('Sessao encerrada.','ok');
 }
 function requireAuth(cb){
@@ -482,10 +495,16 @@ function sb(containerId,onChange){
 
 // App functions
 function goTab(t){
+  // Exigir autenticação para abas de dados sensíveis
+  if((t==='solic'||t==='manut')&&!curUser){
+    showAlert('Voce precisa fazer login para acessar estes dados.','err');
+    return;
+  }
   document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('active',['entrega','solic','manut'][i]===t)});
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   document.getElementById('scr-'+t).classList.add('active');
   if(t==='solic')renderSols();
+  if(t==='manut')renderManut();
   clearAlert();
 }
 
@@ -510,6 +529,14 @@ function toggleSolicView(){
   document.getElementById('solic-list-view').style.display=showF?'none':'block';
   if(!showF)renderSols();
   if(showF&&document.getElementById('solic-items-wrap').children.length===0)addSolicItem();
+}
+
+function toggleManutView(){
+  var manutShowForm=!document.getElementById('manut-form-view').style.display||document.getElementById('manut-form-view').style.display==='none';
+  document.getElementById('manut-form-view').style.display=manutShowForm?'block':'none';
+  document.getElementById('manut-list-view').style.display=manutShowForm?'none':'block';
+  if(!manutShowForm)renderManut();
+  if(manutShowForm&&document.getElementById('manut-items-wrap').children.length===0)addManutItem();
 }
 
 function showAlert(msg,tp){
@@ -630,6 +657,22 @@ function renderSols(){
       its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+(it.obs?' - '+it.obs:'')+'</div>';
     }
     html+='<div class="card solic-card"><div class="solic-header"><div><div class="solic-school">'+s.escola+'</div><div class="solic-meta">'+s.nome+' - '+s.data+'</div></div><span class="badge '+(s.status==='entregue'?'badge-ok':'badge-pend')+'"><i class="ti ti-'+(s.status==='entregue'?'check':'clock')+'" style="font-size:12px" aria-hidden="true"></i> '+(s.status==='entregue'?'Entregue':'Pendente')+'</span></div>'+its+'</div>';
+  }
+  el.innerHTML=html;
+}
+
+function renderManut(){
+  var el=document.getElementById('my-manuts');
+  if(manuts.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao de manutencao registrada ainda.</div>';return}
+  var html='';
+  for(var i=0;i<manuts.length;i++){
+    var m=manuts[i];
+    var its='';
+    for(var j=0;j<m.items.length;j++){
+      var it=m.items[j];
+      its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.equip+' - '+it.tipo+':</span> '+it.desc+'</div>';
+    }
+    html+='<div class="card solic-card"><div class="solic-header"><div><div class="solic-school">'+m.escola+'</div><div class="solic-meta">'+m.nome+' - '+m.data+'</div></div><span class="badge '+(m.status==='concluido'?'badge-ok':'badge-pend')+'"><i class="ti ti-'+(m.status==='concluido'?'check':'clock')+'" style="font-size:12px" aria-hidden="true"></i> '+(m.status==='concluido'?'Concluido':'Pendente')+'</span></div>'+its+'</div>';
   }
   el.innerHTML=html;
 }
@@ -794,7 +837,7 @@ function init(){
   renderUlt();
   goEntregaSub('menu');
   renderSols();
-  addManutItem();
+  renderManut();
   initGL();
   // Carregar solicitacoes pendentes da planilha
   loadPendentesDaAPI();
