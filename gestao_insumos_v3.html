@@ -225,7 +225,7 @@ function initGL(){
   try{
     // Inicializar Google Sign-In
     google.accounts.id.initialize({
-      client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
+      client_id:'480603319881-ks5tkav95kboim23c9ff2a0gubvnklds.apps.googleusercontent.com',
       callback:handleGoogleResponse,
       error_callback:function(){showAlert('Erro ao configurar Google OAuth. Verifique se https://niltonmachado77-rso.github.io foi adicionado ao Google Cloud Console.','err')}
     });
@@ -261,7 +261,7 @@ function initGL(){
   // Manter initTokenClient para requisições de API se necessário
   try{
     gsi=google.accounts.oauth2.initTokenClient({
-      client_id:'736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com',
+      client_id:'480603319881-ks5tkav95kboim23c9ff2a0gubvnklds.apps.googleusercontent.com',
       scope:'email profile openid',
       callback:function(r){
         if(!r||!r.access_token)return;

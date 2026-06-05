@@ -64,7 +64,7 @@ Se você receber este erro ao clicar em **"Entrar com Google"**, é porque o dom
 #### 3. Encontre o OAuth Client ID
 - Procure por **"OAuth 2.0 Client IDs"**
 - Clique no que diz **"Web Application"**
-- ID: `736548641453-tj7am4m73s2kek4sqvqcfbmo3qb13o2t.apps.googleusercontent.com`
+- ID: `480603319881-ks5tkav95kboim23c9ff2a0gubvnklds.apps.googleusercontent.com`
 
 #### 4. Adicione as Origens Autorizadas
 - Na seção **"Authorized JavaScript origins"**, clique **+ Add URI**
