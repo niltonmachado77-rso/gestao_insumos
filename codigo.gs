@@ -30,6 +30,8 @@ function doGet(e) {
     return jsonOutput(getEstoqueInsumos(), e);
   } else if (action === "getLogs") {
     return jsonOutput(getLogs(), e);
+  } else if (action === "getConfigUsuarios") {
+    return jsonOutput(getConfigUsuarios(), e);
   } else {
     return HtmlService.createHtmlOutput(
       '<h2>Sistema de Gestão de Insumos - API</h2><p>Use os parâmetros: ?action=getEscolas, getConfig, getPendentes, getEntregas&escola=NOME, getEstoque, getLogs</p>'
@@ -337,6 +339,30 @@ function registrarLog(usuario, acao, detalhes) {
   aba.appendRow([new Date(), usuario, acao, detalhes]);
 }
 
+function getConfigUsuarios() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const aba = ss.getSheetByName("Config_Usuarios");
+  if (!aba) return [];
+  
+  const dados = aba.getDataRange().getValues();
+  const usuarios = [];
+  
+  for (let i = 1; i < dados.length; i++) {
+    const email = dados[i][0] ? dados[i][0].toString().trim() : "";
+    const nome = dados[i][1] ? dados[i][1].toString().trim() : "";
+    const perfil = dados[i][2] ? dados[i][2].toString().trim().toUpperCase() : "";
+    
+    if (email && perfil === "COORDENADOR") {
+      usuarios.push({
+        email: email.toLowerCase(),
+        nome: nome,
+        perfil: perfil
+      });
+    }
+  }
+  return usuarios;
+}
+
 function verificarPermissao(email) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const aba = ss.getSheetByName("Config_Usuarios");
@@ -344,8 +370,8 @@ function verificarPermissao(email) {
   
   const dados = aba.getDataRange().getValues();
   for (let i = 1; i < dados.length; i++) {
-    if (dados[i][0] && dados[i][0].toString().trim() === email && 
-        dados[i][2] && dados[i][2].toString().trim() === "coord_tecnologia") {
+    if (dados[i][0] && dados[i][0].toString().trim().toLowerCase() === email.toLowerCase() && 
+        dados[i][2] && dados[i][2].toString().trim().toUpperCase() === "COORDENADOR") {
       return true;
     }
   }
