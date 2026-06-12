@@ -49,6 +49,7 @@ textarea{resize:vertical;min-height:70px}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
 .badge-pend{background:var(--color-warning-light);color:var(--color-warning-dark)}
 .badge-ok{background:var(--color-success-light);color:var(--color-success-dark)}
+.badge-cancel{background:var(--color-danger-light);color:var(--color-danger-dark)}
 .solic-item{border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:10px;background:#fff;box-shadow:var(--shadow-sm)}
 .solic-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .rm-btn{background:none;border:none;cursor:pointer;color:var(--color-danger);font-size:16px;padding:2px 6px;border-radius:var(--radius)}
@@ -111,7 +112,9 @@ optgroup{font-weight:600;font-size:12px}
 .solic-card .solic-school{font-weight:600;font-size:14px}
 .solic-card .solic-meta{font-size:12px;color:var(--color-text-secondary)}
 @media(max-width:600px){
-body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.row2{grid-template-columns:1fr!important}.sub-opt-grid{grid-template-columns:1fr}.footer-act{flex-direction:column}.footer-act .btn{width:100%;justify-content:center}select,input,.btn{min-height:44px;font-size:15px}}
+body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.row2{grid-template-columns:1fr!important}.sub-opt-grid{grid-template-columns:1fr!important}.footer-act{flex-direction:column}.footer-act .btn{width:100%;justify-content:center}select,input,.btn{min-height:44px;font-size:15px}.tab{font-size:12px;padding:8px 6px;min-width:60px;word-break:keep-all}.tab i{font-size:14px}.badge{font-size:10px;word-break:keep-all}.solic-school{font-size:13px}.card{padding:1rem}.card-title{font-size:13px}.modal-box{max-width:95%}.ppill{font-size:11px;padding:5px 10px}.chk-label{font-size:12px}.sb-input{font-size:14px}}
+@media(max-width:400px){
+.tab{font-size:11px;padding:6px 4px;min-width:50px}.tabs{gap:4px}.sub-opt .opt-title{font-size:13px}.sub-opt .opt-desc{font-size:11px}}
 </style>
 <h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Sistema de gestao de insumos e manutencao - Secretaria de Educacao de Remanso</h2>
 <div class="app">
@@ -142,7 +145,7 @@ body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.ro
 <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:flex-end">
 <div class="field" style="margin-bottom:0"><label>Selecionar escola</label><div id="sb-hist-escola"></div></div>
 <div class="field" style="margin-bottom:0"><label>Data (dd/mm/aaaa)</label><input type="text" id="hist-data-filtro" placeholder="Opcional" maxlength="10"></div>
-<div class="field" style="margin-bottom:0"><label>Mês/Ano (mm/aaaa)</label><input type="text" id="hist-mesano-filtro" placeholder="Opcional" maxlength="7"></div>
+<div class="field" style="margin-bottom:0"><label>Mes/Ano (mm/aaaa)</label><input type="text" id="hist-mesano-filtro" placeholder="Opcional" maxlength="7"></div>
 <button class="btn btn-ghost btn-sm" onclick="clearHistFilters()" style="height:36px"><i class="ti ti-x" style="font-size:14px" aria-hidden="true"></i> Limpar</button>
 </div>
 </div>
@@ -211,18 +214,30 @@ Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-
 </div>
 <div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-ghost btn-sm" onclick="closeAuth()">Cancelar</button></div>
 </div></div>
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal-box">
+    <div class="modal-title"><i class="ti ti-ban" style="font-size:20px;color:var(--color-danger)" aria-hidden="true"></i> Recusar solicitacao</div>
+    <p style="margin:0 0 1rem;font-size:13px;color:var(--color-text-secondary)">Informe a justificativa para cancelar a solicitacao sem atendimento.</p>
+    <div class="field"><label>Justificativa</label><textarea id="cancel-reason" placeholder="Descreva o motivo do cancelamento..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="closeCancelModal()">Voltar</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmCancel()"><i class="ti ti-ban" style="font-size:14px" aria-hidden="true"></i> Confirmar cancelamento</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="registerModal">
 <div class="modal-box">
 <div class="modal-title"><i class="ti ti-user-plus" style="font-size:20px;color:var(--color-primary)" aria-hidden="true"></i> Primeiro acesso</div>
-<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Bem-vindo! Preencha seus dados para concluir o cadastro.</p>
+<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Bem-vindo! Preencha seus dados para concluir o cadastro. Selecione uma ou mais escolas que voce atende.</p>
 <div class="field">
 <label>Nome completo</label>
 <input type="text" id="reg-nome" placeholder="Seu nome completo">
 </div>
 <div class="field">
-<label>Escola / Unidade</label>
-<div id="sb-reg-escola"></div>
+<label>Escolas / Unidades</label>
+<div id="reg-escolas-container" style="max-height:300px;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius);padding:8px"></div>
 </div>
+<div style="margin-top:8px;font-size:12px;color:var(--color-text-tertiary)"><span id="reg-escolas-count">0</span> escola(s) selecionada(s)</div>
 <div id="reg-err" style="font-size:12px;color:var(--color-danger);margin-bottom:8px;display:none;text-align:center"></div>
 <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
 <button class="btn btn-ghost btn-sm" onclick="logout()">Cancelar</button>
@@ -233,6 +248,10 @@ Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 var ESCOLAS=["SecEdu - Neila","SecEdu - Luciana","SecEdu - Tovinho","SecEdu - Dir.Formacao (Joelma)","SecEdu - Dir.Gestao Escolar (Merisvalda)","SecEdu - Nucleos","SecEdu - Censo/IDS","SecEdu - Compras","Prefeitura","CAEE - Irma Joana Margarida Gasparin","Associacao Sao Jose de Remanso - Quadra 02","CM Deputado Theodulo Albuquerque - Quadra 20","CM Eraldo Tinoco Melo - Quadra 14","CM Ruy Barbosa - Quadra 07","Creche M Profa. Marina Maria de Araujo Campinho - Vila Matilde","EMI Dra. Zilda Arns - Quadra 10","EM Dr. Demosthenes Guanaes Pereira - Quadra 02","EMI Chapeuzinho Vermelho - Quadra 01","EMI Olga Dias Almeida - Quadra 16","EMI Pequeno Principe - Quadra 11","EMI Profa. Florinda Silva Castelo Branco - Vila Santana","EMI Sao Francisco - Vila Dalvina II","EMI Tia Anastacia - Quadra 02","EM Profa. Alice Dantas","EM Profa. Cleonice Soeiro Castelo Branco - Vila Santana","EM Profa. Diomar Martins - Quadra 17","EM Profa. Iracy Ferreira de Castro - Quadra 20","EM Profa. Isolina Nunes Barbosa - BNH","EM Wilson Lins de Albuquerque - Area Industrial","EM Profa. Longhina Rogovshi Evangelista - PESTALOZZI - Quadra 02","CM Antonio Borges de Vargas - Jatoba","CM Basilio Ferreira Primo - Cacimba do Basilio","CM Jose Desiderio","CM Nossa Senhora Aparecida - Vila Aparecida","CM Olindina Sa Bandeira - Novo Marcos","CM Prof. Dionisio - Xique-Xique","CM Profa. Zilnoura Moura - Malhadinha","CM Santo Antonio - Estacada","EM Ivoneide Maria - Vila Aparecida","EM Alexandre Rodrigues Amorim - Pimenteira","EM Ana Nery - Sitio Melancia","EM Arco Iris - Cala Boca","EM Carlos Mariguella - Assentamento Canaa","EM Clotilde Vaz de Oliveira - Novo Marcos","EM Delza Goncalves da Silva - Malhadinha","EM Dom Jose Rodrigues - Suvela","EM Dom Pedro II - Caldeirao da Terra","CM Dr. Demosthenes Guanaes - Espinheiro","EM Frei Henrique - Pote","EMI Profa. Nilza Rosa de Negreiros Borges - Malhadinha","EM Irma Dulce - Lagoa do Tamburil","EM Jose Desiderio","EM Jose Rodrigues - Lagoa do Jose Rodrigues","EM Jose Vicente dos Santos - Sanharo","EM Joao Guariroba Lopes - Ventura","EM Joao Paulo I - Estreito","EM Maria Salome da Silva - Caititu","EM Mariano Antonio Celestino - Cacimba do Genipapo","EM Nossa Senhora da Conceicao - Nova Lina","EM Novo Horizonte - Tabuleiro","EM Padre Herculano - Capivara","EM Padre Jose Daniel Potter - Lagoa do Sao Bento","EM Pedro Alvares Cabral - Mancambira de Flecha","EM Pedro Jose dos Passos - Formoso","EM Profa. Deulzuita Ferreira Alves - Martinha","EM Profa. Eunice Brito Alves - Garajau","EM Profa. Julieta Silva Castelo Branco - Tanque Velho","EM Profa. Mariinha - Fazenda Santa Maria","EM Profa. Vera Castelo Branco Teixeira - Mandu","EM Reinaldo Ribeiro Lopes - Lagoa dos Cavalos","EM Rodolfo Carvalho - Lage","EM Sagrado Coracao de Jesus - Canoa dos Brito","EM Santa Terezinha - Jatobazeiro da Terezinha","EM Semeando - Pau D'Arco","EM Sao Jose - Caldeirao do Umbuzeiro","EM Sao Lucas - Fazenda Sao Bento","EM Sao Lucas - Piedade de Baixo","GE Ambrosio Gomes dos Santos - Tamburil","GE Bom Jesus da Lapa - Pau ferro","GE Decio Castelo Branco - Lagoa do Barro","GE Dom Tomaz Guilherme Murphy - Planta","GE Dr. Delio Ledoux - Caldeirao do Sal","GE Estandislau Moura do Carmo - Lagoa dos Bois","GE Juliao Soares - Negros","GE Nossa Senhora do Desterro - Desterro","GE Princesa Isabel - Tocas","GE Profa. Valdete Freire - Mastruz","GE Santa Luzia - Iguarape","GE Santo Andre - Papagaio","GE Santo Antonio de Padua - Campo Maior","GE Santos Dumont - Tamburil","GE Sao Judas Tadeu - Caldeirao do Cafe","Morro Branco - Morro Branco","EM Licia Maria Pires - Aroeira","EM Profa. Cirene Borges - Alto Alegre (Alto Grande)","GE Bom Pastor - Bom Principio","GE Educador Paulo Freire - Pedra da Onca","GE Joel Felix de Andrade - Salina do Brejo","GE Jose Batista Ferreira da Silva - Cantinho","GE Santa Isabel - Barra da Induema","GE SAO GABRIEL - Barra do Sao Gabriel","GE Sao Marcos - Salina do Brejo"];
+var SECEDU_LABEL="Secretaria de Educação";
+function getEscolasExibicao(){var out=[];var temSecEdu=false;for(var i=0;i<ESCOLAS.length;i++){if(isSecEdu(ESCOLAS[i])){if(!temSecEdu){temSecEdu=true;out.push(SECEDU_LABEL)}}else{out.push(ESCOLAS[i])}}return out}
+function isSecEdu(nome){return nome===SECEDU_LABEL||nome.toLowerCase().indexOf('sec edu')!==-1||nome.toLowerCase().startsWith('sec edu')}
+function matchEscola(escolaSolic,escolaUser){if(escolaUser===SECEDU_LABEL){return isSecEdu(escolaSolic)}return escolaSolic===escolaUser}
 
 var MODELS_BRAND=[{brand:'Epson',m:['Epson L3150','Epson L3250','Epson L4260','Epson L5590']},{brand:'Pantum',m:['Pantum BM5100ADW','Pantum BM5110ADW']},{brand:'Kyocera',m:['Kyocera ECOSYS N2040DN/L','Kyocera ECOSYS N2035DN/L']}];
 var PCFG={BM5100ADW:{l:'Pantum BM5100ADW',it:[{id:'toner',l:'Toner',c:'#444441'},{id:'cilindro',l:'Cilindro (Drum)',c:'#888780'}]},BM5110ADW:{l:'Pantum BM5110ADW',it:[{id:'toner',l:'Toner',c:'#444441'},{id:'cilindro',l:'Cilindro (Drum)',c:'#888780'}]},elgin_M6550:{l:'Elgin M6550',it:[{id:'toner',l:'Toner',c:'#444441'},{id:'cilindro',l:'Cilindro (Drum)',c:'#888780'}]},L5590:{l:'Epson L5590 (544)',it:[{id:'preto',l:'Tinta Preta 544',c:'#2C2C2A'},{id:'cyan',l:'Tinta Cyan 544',c:'#1D9E75'},{id:'magenta',l:'Tinta Magenta 544',c:'#D4537E'},{id:'amarelo',l:'Tinta Amarelo 544',c:'#BA7517'}]},L4260:{l:'Epson L4260 (504)',it:[{id:'preto',l:'Tinta Preta 504',c:'#2C2C2A'},{id:'cyan',l:'Tinta Cyan 504',c:'#1D9E75'},{id:'magenta',l:'Tinta Magenta 504',c:'#D4537E'},{id:'amarelo',l:'Tinta Amarelo 504',c:'#BA7517'}]}};
@@ -245,29 +264,34 @@ var curUser=null, sols=[], dels=[], manuts=[], sc=0, mc=0, authCb=null, showF=fa
 var gsi=null;
 var histPage=1, HIST_PER_PAGE=20;
 var usuarios=[], sbRegEscola=null;
+var configUsuarios=[];
 
-// Google Login
+function isCoordenador(email){
+  email=email.toLowerCase().trim();
+  for(var i=0;i<configUsuarios.length;i++){
+    if(configUsuarios[i].email===email)return true;
+  }
+  return false;
+}
+
+function carregarConfigUsuarios(){
+  apiGet('getConfigUsuarios',function(err,data){
+    if(err||!Array.isArray(data))return;
+    configUsuarios=data;
+  });
+}
+
 function initGL(){
   if(typeof google==='undefined'||!google.accounts){setTimeout(initGL,500);return}
-  
   try{
-    // Inicializar Google Sign-In
     google.accounts.id.initialize({
       client_id:'480603319881-ks5tkav95kboim23c9ff2a0gubvnklds.apps.googleusercontent.com',
       callback:handleGoogleResponse,
       error_callback:function(){showAlert('Erro ao configurar Google OAuth. Verifique se https://niltonmachado77-rso.github.io foi adicionado ao Google Cloud Console.','err')}
     });
-    
-  // Renderizar botão no header
     var btnContainer=document.getElementById('google-sign-in-btn');
     if(btnContainer&&!curUser){
-      google.accounts.id.renderButton(btnContainer,{
-        theme:'outline',
-        size:'large',
-        text:'signin_with'
-      });
-      
-      // Adicionar botão de teste se em localhost
+      google.accounts.id.renderButton(btnContainer,{theme:'outline',size:'large',text:'signin_with'});
       if(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'){
         var testBtn=document.createElement('button');
         testBtn.className='btn btn-ghost btn-sm';
@@ -275,70 +299,53 @@ function initGL(){
         testBtn.onclick=function(){
           processUserData({email:'teste@coordenacao.local',name:'Teste',picture:''});
           curUser.role='coordenacao';
-          var bar=document.getElementById('userBar');
-          bar.classList.add('show');
+          document.getElementById('userBar').classList.add('show');
           showAlert('Modo teste ativado com permissão de coordenação','ok');
         };
         btnContainer.appendChild(testBtn);
       }
     }
-  }catch(e){
-    showAlert('Erro ao inicializar Google Login. Veja CONFIGURAR_GOOGLE_OAUTH.md','err');
-  }
-  
-  // Manter initTokenClient para requisições de API se necessário
+  }catch(e){showAlert('Erro ao inicializar Google Login. Veja CONFIGURAR_GOOGLE_OAUTH.md','err');}
   try{
     gsi=google.accounts.oauth2.initTokenClient({
       client_id:'480603319881-ks5tkav95kboim23c9ff2a0gubvnklds.apps.googleusercontent.com',
       scope:'email profile openid',
       callback:function(r){
         if(!r||!r.access_token)return;
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+r.access_token}}).then(function(rs){return rs.json()}).then(function(u){
-          processUserData(u);
-        });
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+r.access_token}}).then(function(rs){return rs.json()}).then(function(u){processUserData(u);});
       }
     });
   }catch(e){}
 }
 
-// Processar resposta do Google Sign-In
 function handleGoogleResponse(response){
   if(!response.credential)return;
-  // Decodificar JWT
   var parts=response.credential.split('.');
   if(parts.length!==3)return;
   try{
     var payload=JSON.parse(atob(parts[1]));
     payload.picture=payload.picture||'';
     processUserData(payload);
-  }catch(e){
-    showAlert('Erro ao processar resposta do Google. Verifique se https://niltonmachado77-rso.github.io está autorizado no Google Cloud Console.','err');
-  }
+  }catch(e){showAlert('Erro ao processar resposta do Google.','err');}
 }
 
-// Processar dados do usuário
 function processUserData(u){
   if(!u||!u.email)return;
   var email=u.email.toLowerCase().trim();
   var nome=u.name||u.given_name||email.split('@')[0];
   var foto=u.picture||'';
-  var coords=['tecnologiaremanso@gmail.com','nilton.machado77@gmail.com','fabio.srn@gmail.com','teste@coordenacao.local'];
-  var isC=coords.indexOf(email)!==-1;
-  
-  // Procurar usuário cadastrado
+  var isC=isCoordenador(email);
   var usuarioCadastrado=findUsuario(email);
   if(usuarioCadastrado){
-    // Usuário já cadastrado
-    curUser={email:email,name:usuarioCadastrado.nome||nome,role:isC?'coordenacao':'solicitante',picture:foto,escola:usuarioCadastrado.escola};
+    curUser={email:email,name:usuarioCadastrado.nome||nome,role:isC?'coordenacao':'solicitante',picture:foto,escolas:Array.isArray(usuarioCadastrado.escolas)?usuarioCadastrado.escolas:(usuarioCadastrado.escola?[usuarioCadastrado.escola]:[]),escola:''};
+    if(curUser.escolas.length>0)curUser.escola=curUser.escolas[0];
     updateUserUI(curUser);
     if(isC&&authCb){authCb();authCb=null}
   }else if(isC){
-    // Coordenador novo - permite acesso direto
-    curUser={email:email,name:nome,role:'coordenacao',picture:foto,escola:''};
+    curUser={email:email,name:nome,role:'coordenacao',picture:foto,escolas:[],escola:''};
     updateUserUI(curUser);
     if(authCb){authCb();authCb=null}
   }else{
-    // Usuário novo - exigir cadastro
     tempUser={email:email,nome:nome,foto:foto};
     showRegisterModal();
   }
@@ -346,35 +353,47 @@ function processUserData(u){
 
 function findUsuario(email){
   email=email.toLowerCase().trim();
-  for(var i=0;i<usuarios.length;i++){
-    if(usuarios[i].email.toLowerCase()===email)return usuarios[i];
-  }
+  for(var i=0;i<usuarios.length;i++){if(usuarios[i].email.toLowerCase()===email)return usuarios[i];}
   return null;
 }
 
 function showRegisterModal(){
   document.getElementById('registerModal').classList.add('show');
-  if(!sbRegEscola){
-    sbRegEscola=sb('sb-reg-escola');
+  var container=document.getElementById('reg-escolas-container');
+  container.innerHTML='';
+  for(var i=0;i<ESCOLAS.length;i++){
+    var label=document.createElement('label');
+    label.className='chk-row';label.style.marginBottom='0';label.style.borderRadius='0';label.style.border='none';label.style.borderBottom='1px solid var(--color-border)';
+    var chk=document.createElement('input');chk.type='checkbox';chk.value=ESCOLAS[i];chk.style.width='16px';chk.style.height='16px';
+    chk.addEventListener('change',function(){updateRegEscolasCount()});
+    var span=document.createElement('span');span.className='chk-label';span.textContent=ESCOLAS[i];
+    label.appendChild(chk);label.appendChild(span);container.appendChild(label);
   }
   document.getElementById('reg-nome').value=tempUser.nome;
   document.getElementById('reg-err').style.display='none';
+  updateRegEscolasCount();
+}
+
+function updateRegEscolasCount(){
+  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
+  document.getElementById('reg-escolas-count').textContent=checks.length;
+}
+
+function getSelectedEscolas(){
+  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
+  var selected=[];for(var i=0;i<checks.length;i++)selected.push(checks[i].value);
+  return selected;
 }
 
 function completeRegistration(){
   var nome=document.getElementById('reg-nome').value.trim();
-  var escola=sbRegEscola?sbRegEscola.getValue():'';
+  var escolasSelecionadas=getSelectedEscolas();
   var err=document.getElementById('reg-err');
-  
   if(!nome){err.textContent='Informe seu nome.';err.style.display='block';return}
-  if(!escola){err.textContent='Selecione sua escola.';err.style.display='block';return}
-  
-  // Salvar novo usuário
-  usuarios.push({email:tempUser.email,nome:nome,escola:escola,dataCadastro:new Date().toLocaleDateString('pt-BR')});
+  if(escolasSelecionadas.length===0){err.textContent='Selecione ao menos uma escola.';err.style.display='block';return}
+  usuarios.push({email:tempUser.email,nome:nome,escolas:escolasSelecionadas,escola:escolasSelecionadas[0],dataCadastro:new Date().toLocaleDateString('pt-BR')});
   save();
-  
-  // Completar login
-  curUser={email:tempUser.email,name:nome,role:'solicitante',picture:tempUser.foto,escola:escola};
+  curUser={email:tempUser.email,name:nome,role:'solicitante',picture:tempUser.foto,escolas:escolasSelecionadas,escola:escolasSelecionadas[0]};
   updateUserUI(curUser);
   document.getElementById('registerModal').classList.remove('show');
   tempUser=null;
@@ -383,293 +402,169 @@ function completeRegistration(){
 function updateUserUI(user){
   var btnContainer=document.getElementById('google-sign-in-btn');
   if(btnContainer)btnContainer.classList.add('hide');
-  
-  var bar=document.getElementById('userBar');
-  bar.classList.add('show');
+  var bar=document.getElementById('userBar');bar.classList.add('show');
   document.getElementById('userBarName').textContent=user.name;
   document.getElementById('userBarEmail').textContent=user.email;
   var av=document.getElementById('userAvatar');
   av.innerHTML=user.picture?'<img src="'+user.picture+'" alt="Avatar">':'<i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i>';
-  
   document.getElementById('authModal').classList.remove('show');
 }
 
 var tempUser=null;
-function logout(){
-  curUser=null;
-  document.getElementById('userBar').classList.remove('show');
-  var btnContainer=document.getElementById('google-sign-in-btn');
-  if(btnContainer)btnContainer.classList.remove('hide');
-  // Re-renderizar botão
-  if(typeof google!=='undefined'&&google.accounts){
-    btnContainer.innerHTML='';
-    google.accounts.id.renderButton(btnContainer,{theme:'outline',size:'large',text:'signin_with'});
-  }
-  // Limpar dados das abas protegidas
-  document.getElementById('my-solics').innerHTML='';
-  document.getElementById('my-manuts').innerHTML='';
-  goEntregaSub('menu');
-  showAlert('Sessao encerrada.','ok');
-}
-function requireAuth(cb){
-  if(curUser&&curUser.role==='coordenacao'){cb();return}
-  if(curUser&&curUser.role==='solicitante'){showAlert('Voce nao tem permissao de coordenacao.','err');return}
-  authCb=cb;
-  document.getElementById('authModal').classList.add('show');
-  document.getElementById('auth-err').style.display='none';
-  var c=document.getElementById('gsi-container');c.innerHTML='';
-  if(gsi){
-    var b=document.createElement('button');
-    b.className='btn btn-primary btn-lg';
-    b.innerHTML='<i class="ti ti-brand-google" style="font-size:16px" aria-hidden="true"></i> Entrar com Google';
-    b.onclick=function(){gsi.requestAccessToken()};
-    c.appendChild(b);
-  }
-}
-function closeAuth(){document.getElementById('authModal').classList.remove('show');authCb=null}
-
-// Storage
-function save(){try{localStorage.setItem('sols',JSON.stringify(sols));localStorage.setItem('dels',JSON.stringify(dels));localStorage.setItem('manuts',JSON.stringify(manuts));localStorage.setItem('usuarios',JSON.stringify(usuarios))}catch(e){}}
-function load(){try{var s=localStorage.getItem('sols'),d=localStorage.getItem('dels'),m=localStorage.getItem('manuts'),u=localStorage.getItem('usuarios');if(s)sols=JSON.parse(s);if(d)dels=JSON.parse(d);if(m)manuts=JSON.parse(m);if(u)usuarios=JSON.parse(u)}catch(e){}}
-
-// API - Enviar dados para a planilha Google Sheets
-function apiPost(action, payload, cb){
-  var url=CONFIG.WEB_APP_URL;
-  if(!url){showAlert('WEB_APP_URL nao configurada em config.js','err');return}
-  fetch(url,{
-    method:'POST',
-    mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:action,payload:payload})
-  }).then(function(r){
-    if(cb)cb(null,{success:true});
-  }).catch(function(err){
-    showAlert('Erro ao comunicar com a planilha: '+err.message,'err');
-    if(cb)cb(err);
+var cancelingSolicId=null;
+function showCancelModal(id){cancelingSolicId=id;document.getElementById('cancel-reason').value='';document.getElementById('cancelModal').classList.add('show');}
+function closeCancelModal(){cancelingSolicId=null;document.getElementById('cancelModal').classList.remove('show');}
+function confirmCancel(){
+  var reason=document.getElementById('cancel-reason').value.trim();
+  if(!cancelingSolicId){showAlert('Nenhuma solicitacao selecionada.','err');return}
+  if(!reason){showAlert('Informe a justificativa do cancelamento.','err');return}
+  closeCancelModal();
+  requireAuth(function(){
+    var s=null;for(var i=0;i<sols.length;i++)if(sols[i].id===cancelingSolicId){s=sols[i];break}
+    if(!s){showAlert('Solicitacao nao encontrada.','err');return}
+    s.status='cancelado';s.canceladoEm=new Date().toLocaleDateString('pt-BR');s.canceladoBy=curUser.name||curUser.email;s.cancelReason=reason;
+    dels.unshift(JSON.parse(JSON.stringify(s)));save();
+    apiPost('recusarSolicitacao',{id:'SOL_'+s.id,canceladoPor:curUser.name||curUser.email,motivo:reason});
+    showAlert('Solicitacao cancelada sem atendimento e registrada.','ok');
+    renderPend();
   });
 }
 
-// API - Buscar dados da planilha Google Sheets
-function apiGet(action, cb){
-  var url=CONFIG.WEB_APP_URL;
-  if(!url){return}
-  // Usar JSONP para contornar CORS no GET
-  var script=document.createElement('script');
-  var callbackName='jsonp_'+Date.now();
-  window[callbackName]=function(data){
-    delete window[callbackName];
-    document.body.removeChild(script);
-    if(cb)cb(null,data);
-  };
+function logout(){
+  curUser=null;document.getElementById('userBar').classList.remove('show');
+  var btnContainer=document.getElementById('google-sign-in-btn');
+  if(btnContainer)btnContainer.classList.remove('hide');
+  if(typeof google!=='undefined'&&google.accounts){btnContainer.innerHTML='';google.accounts.id.renderButton(btnContainer,{theme:'outline',size:'large',text:'signin_with'});}
+  document.getElementById('my-solics').innerHTML='';document.getElementById('my-manuts').innerHTML='';
+  goEntregaSub('menu');showAlert('Sessao encerrada.','ok');
+}
+
+function requireAuth(cb){
+  if(curUser&&curUser.role==='coordenacao'){cb();return}
+  if(curUser&&curUser.role==='solicitante'){showAlert('Voce nao tem permissao de coordenacao.','err');return}
+  authCb=cb;document.getElementById('authModal').classList.add('show');document.getElementById('auth-err').style.display='none';
+  var c=document.getElementById('gsi-container');c.innerHTML='';
+  if(gsi){var b=document.createElement('button');b.className='btn btn-primary btn-lg';b.innerHTML='<i class="ti ti-brand-google" style="font-size:16px" aria-hidden="true"></i> Entrar com Google';b.onclick=function(){gsi.requestAccessToken()};c.appendChild(b);}
+}
+function closeAuth(){document.getElementById('authModal').classList.remove('show');authCb=null}
+
+function save(){try{localStorage.setItem('sols',JSON.stringify(sols));localStorage.setItem('dels',JSON.stringify(dels));localStorage.setItem('manuts',JSON.stringify(manuts));localStorage.setItem('usuarios',JSON.stringify(usuarios))}catch(e){}}
+function load(){try{var s=localStorage.getItem('sols'),d=localStorage.getItem('dels'),m=localStorage.getItem('manuts'),u=localStorage.getItem('usuarios');if(s)sols=JSON.parse(s);if(d)dels=JSON.parse(d);if(m)manuts=JSON.parse(m);if(u)usuarios=JSON.parse(u)}catch(e){}}
+
+function apiPost(action,payload,cb){
+  var url=CONFIG.WEB_APP_URL;if(!url){showAlert('WEB_APP_URL nao configurada em config.js','err');return}
+  fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:action,payload:payload})}).then(function(r){if(cb)cb(null,{success:true});}).catch(function(err){showAlert('Erro ao comunicar com a planilha: '+err.message,'err');if(cb)cb(err);});
+}
+
+function apiGet(action,cb){
+  var url=CONFIG.WEB_APP_URL;if(!url){return}
+  var script=document.createElement('script');var callbackName='jsonp_'+Date.now();
+  window[callbackName]=function(data){delete window[callbackName];document.body.removeChild(script);if(cb)cb(null,data);};
   script.src=url+'?action='+action+'&callback='+callbackName;
-  script.onerror=function(){
-    delete window[callbackName];
-    document.body.removeChild(script);
-    if(cb)cb('Erro ao buscar dados');
-  };
+  script.onerror=function(){delete window[callbackName];document.body.removeChild(script);if(cb)cb('Erro ao buscar dados');};
   document.body.appendChild(script);
 }
 
 function loadPendentesDaAPI(){
   apiGet('getPendentes',function(err,data){
     if(err||!data||!Array.isArray(data))return;
-    // Mapear dados da planilha para formato local
     var pendentes=data.map(function(row){
       var items=[];
       if(row.tipo==='INSUMO'&&row.itens){
         var partes=row.itens.split(' | ');
-        partes.forEach(function(p){
-          var match=p.match(/(.+?):\s*(.+)/);
-          if(match){
-            var insumos=match[2].split(',').map(function(s){
-              var x=s.trim().match(/(.+?)\s*x(\d+)/);
-              return x?{label:x[1].trim(),qty:parseInt(x[2])||1}:{label:s.trim(),qty:1};
-            });
-            items.push({printer:match[1].trim(),insumos:insumos,obs:''});
-          }
-        });
+        partes.forEach(function(p){var match=p.match(/(.+?):\s*(.+)/);if(match){var insumos=match[2].split(',').map(function(s){var x=s.trim().match(/(.+?)\s*x(\d+)/);return x?{label:x[1].trim(),qty:parseInt(x[2])||1}:{label:s.trim(),qty:1};});items.push({printer:match[1].trim(),insumos:insumos,obs:''});}});
       }
-      return{
-        id:row.id?parseInt(row.id.replace(/\D/g,''))||Date.now():Date.now(),
-        escola:row.escola||'',
-        nome:row.solicitante||'',
-        data:row.data||'',
-        items:items.length?items:[{printer:row.equipamento||row.tipo||'',insumos:[{label:row.itens||'',qty:1}],obs:''}],
-        status:row.status==='ENTREGUE'?'entregue':'pendente'
-      };
+      return{id:row.id?parseInt(row.id.replace(/\D/g,''))||Date.now():Date.now(),escola:row.escola||'',nome:row.solicitante||'',data:row.data||'',items:items.length?items:[{printer:row.equipamento||row.tipo||'',insumos:[{label:row.itens||'',qty:1}],obs:''}],status:row.status==='ENTREGUE'?'entregue':'pendente'};
     });
-    // Adicionar ao array sols (evitar duplicatas)
-    pendentes.forEach(function(p){
-      var exists=sols.some(function(s){return s.id===p.id});
-      if(!exists)sols.unshift(p);
-    });
-    save();
-    renderPend();
-    renderSols();
+    pendentes.forEach(function(p){var exists=sols.some(function(s){return s.id===p.id});if(!exists)sols.unshift(p);});
+    save();renderPend();renderSols();
   });
 }
 
-// SearchableSelect (CORRIGIDO - funciona com mouse)
 function sb(containerId,onChange){
-  var container=document.getElementById(containerId);
-  if(!container)return;
+  var container=document.getElementById(containerId);if(!container)return;
   var wrap=document.createElement('div');wrap.className='sb-wrap';
   var inp=document.createElement('input');inp.type='text';inp.className='sb-input';inp.placeholder='Digite para buscar...';inp.autocomplete='off';
   var arrow=document.createElement('span');arrow.className='sb-arrow';arrow.innerHTML='&#x25BC;';
   var drop=document.createElement('div');drop.className='sb-drop';
   wrap.appendChild(inp);wrap.appendChild(arrow);wrap.appendChild(drop);container.appendChild(wrap);
-  
-  // Event delegation para cliques nos itens (CORRIGIDO)
-  drop.addEventListener('click',function(e){
-    var item=e.target.closest('.sb-item');
-    if(item){sel(item.getAttribute('data-value'));e.stopPropagation()}
-  });
-  
+  drop.addEventListener('click',function(e){var item=e.target.closest('.sb-item');if(item){sel(item.getAttribute('data-value'));e.stopPropagation()}});
   document.addEventListener('click',function(e){if(!wrap.contains(e.target))drop.classList.remove('show')});
   inp.addEventListener('focus',function(){fil('')});
   inp.addEventListener('click',function(e){e.stopPropagation();drop.classList.toggle('show');if(drop.classList.contains('show'))fil(inp.value)});
   arrow.addEventListener('click',function(e){e.stopPropagation();drop.classList.toggle('show');if(drop.classList.contains('show'))fil(inp.value)});
   inp.addEventListener('input',function(){drop.classList.add('show');fil(inp.value)});
   inp.addEventListener('keydown',function(e){
-    var its=drop.querySelectorAll('.sb-item');
-    var hl=drop.querySelector('.sb-item.hl');
-    var idx=-1;if(hl)idx=Array.prototype.indexOf.call(its,hl);
+    var its=drop.querySelectorAll('.sb-item');var hl=drop.querySelector('.sb-item.hl');var idx=-1;if(hl)idx=Array.prototype.indexOf.call(its,hl);
     if(e.key==='ArrowDown'){e.preventDefault();if(idx<its.length-1){if(hl)hl.classList.remove('hl');its[idx+1].classList.add('hl');its[idx+1].scrollIntoView({block:'nearest'})}}
     else if(e.key==='ArrowUp'){e.preventDefault();if(idx>0){if(hl)hl.classList.remove('hl');its[idx-1].classList.add('hl');its[idx-1].scrollIntoView({block:'nearest'})}}
     else if(e.key==='Enter'){e.preventDefault();if(hl)sel(hl.getAttribute('data-value'))}
     else if(e.key==='Escape'){drop.classList.remove('show')}
   });
-  
   function dest(txt,term){if(!term)return txt;var r=new RegExp('('+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return txt.replace(r,'<span class="sb-match">$1</span>')}
-  
   function fil(termo){
-    var t=termo.toLowerCase().trim();
-    var res=[];
-    if(!t)res=ESCOLAS.slice(0,20);
-    else res=ESCOLAS.filter(function(e){
-      var l=e.toLowerCase();
-      var nc=l.replace(/^(cm|emi|em|ge|creche m|sec edu -|prefeitura)\s*/i,'').trim();
-      if(l.indexOf(t)!==-1||nc.indexOf(t)!==-1)return true;
-      var partes=l.split(/[-\/]/);
-      for(var i=0;i<partes.length;i++)if(partes[i].trim().indexOf(t)!==-1)return true;
-      var palavras=t.split(/\s+/);
-      for(var j=0;j<palavras.length;j++)if(l.indexOf(palavras[j])===-1)return false;
-      return palavras.length>0;
-    });
+    var t=termo.toLowerCase().trim();var exibicao=getEscolasExibicao();var res=[];
+    if(!t)res=exibicao.slice(0,20);
+    else res=exibicao.filter(function(e){var l=e.toLowerCase();var nc=l.replace(/^(cm|emi|em|ge|creche m|sec edu -|prefeitura)\s*/i,'').trim();if(l.indexOf(t)!==-1||nc.indexOf(t)!==-1)return true;var partes=l.split(/[-\/]/);for(var i=0;i<partes.length;i++)if(partes[i].trim().indexOf(t)!==-1)return true;var palavras=t.split(/\s+/);for(var j=0;j<palavras.length;j++)if(l.indexOf(palavras[j])===-1)return false;return palavras.length>0;});
     if(res.length===0){drop.innerHTML='<div class="sb-noresult">Nenhuma escola encontrada</div>';return}
-    drop.innerHTML=res.map(function(e){
-      return '<div class="sb-item" data-value="'+e.replace(/"/g,'"')+'">'+(t?dest(e,t):e)+'</div>';
-    }).join('');
+    drop.innerHTML=res.map(function(e){return '<div class="sb-item" data-value="'+e.replace(/"/g,'"')+'">'+(t?dest(e,t):e)+'</div>';}).join('');
   }
-  
   function sel(v){inp.value=v;drop.classList.remove('show');inp.setAttribute('data-value',v);if(onChange)onChange(v)}
-  
   return{getValue:function(){return inp.getAttribute('data-value')||''},setValue:function(v){inp.value=v;inp.setAttribute('data-value',v)},clear:function(){inp.value='';inp.setAttribute('data-value','')}}
 }
 
-// App functions
 function goTab(t){
-  // Exigir autenticação para abas de dados sensíveis
-  if((t==='solic'||t==='manut')&&!curUser){
-    showAlert('Voce precisa fazer login para acessar estes dados.','err');
-    return;
-  }
+  if((t==='solic'||t==='manut')&&!curUser){showAlert('Voce precisa fazer login para acessar estes dados.','err');return;}
   document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('active',['entrega','solic','manut'][i]===t)});
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   document.getElementById('scr-'+t).classList.add('active');
-  if(t==='solic')renderSols();
-  if(t==='manut')renderManut();
-  clearAlert();
+  if(t==='solic')renderSols();if(t==='manut')renderManut();clearAlert();
 }
 
 function goEntregaSub(sub){
-  if((sub==='hist'||sub==='pend')&&!curUser){
-    showAlert('Voce precisa fazer login para acessar estes dados.','err');
-    return;
-  }
+  if((sub==='hist'||sub==='pend')&&!curUser){showAlert('Voce precisa fazer login para acessar estes dados.','err');return;}
   document.getElementById('entrega-menu').style.display=sub==='menu'?'block':'none';
   document.getElementById('entrega-hist').style.display=sub==='hist'?'block':'none';
   document.getElementById('entrega-pend').style.display=sub==='pend'?'block':'none';
-  if(sub==='hist'){
-    histPage=1;
-    renderUlt();
-  }
-  if(sub==='pend')renderPend();
+  if(sub==='hist'){histPage=1;renderUlt();}if(sub==='pend')renderPend();
 }
 
 function toggleSolicView(){
-  showF=!showF;
-  document.getElementById('solic-form-view').style.display=showF?'block':'none';
-  document.getElementById('solic-list-view').style.display=showF?'none':'block';
+  showF=!showF;document.getElementById('solic-form-view').style.display=showF?'block':'none';document.getElementById('solic-list-view').style.display=showF?'none':'block';
   if(!showF)renderSols();
-  if(showF){
-    if(document.getElementById('solic-items-wrap').children.length===0)addSolicItem();
-    // Pré-preencher para solicitantes
-    if(curUser&&curUser.role==='solicitante'){
-      if(sbS)sbS.setValue(curUser.escola);
-      document.getElementById('solic-nome').value=curUser.name;
-    }
-  }
+  if(showF){if(document.getElementById('solic-items-wrap').children.length===0)addSolicItem();if(curUser&&curUser.role==='solicitante'){if(sbS&&curUser.escolas&&curUser.escolas.length>0)sbS.setValue(curUser.escolas[0]);document.getElementById('solic-nome').value=curUser.name;}}
 }
 
 function toggleManutView(){
   var manutShowForm=!document.getElementById('manut-form-view').style.display||document.getElementById('manut-form-view').style.display==='none';
-  document.getElementById('manut-form-view').style.display=manutShowForm?'block':'none';
-  document.getElementById('manut-list-view').style.display=manutShowForm?'none':'block';
+  document.getElementById('manut-form-view').style.display=manutShowForm?'block':'none';document.getElementById('manut-list-view').style.display=manutShowForm?'none':'block';
   if(!manutShowForm)renderManut();
-  if(manutShowForm){
-    if(document.getElementById('manut-items-wrap').children.length===0)addManutItem();
-    // Pré-preencher para solicitantes
-    if(curUser&&curUser.role==='solicitante'){
-      if(sbM)sbM.setValue(curUser.escola);
-      document.getElementById('manut-nome').value=curUser.name;
-    }
-  }
+  if(manutShowForm){if(document.getElementById('manut-items-wrap').children.length===0)addManutItem();if(curUser&&curUser.role==='solicitante'){if(sbM&&curUser.escolas&&curUser.escolas.length>0)sbM.setValue(curUser.escolas[0]);document.getElementById('manut-nome').value=curUser.name;}}
 }
 
-function showAlert(msg,tp){
-  var el=document.getElementById('alertEl');
-  el.className='alert show alert-'+(tp||'ok');
-  el.innerHTML='<i class="ti ti-'+(tp==='err'?'alert-circle':'circle-check')+'" style="font-size:16px;flex-shrink:0" aria-hidden="true"></i><span>'+msg+'</span>';
-  setTimeout(function(){el.classList.remove('show')},5000);
-}
+function showAlert(msg,tp){var el=document.getElementById('alertEl');el.className='alert show alert-'+(tp||'ok');el.innerHTML='<i class="ti ti-'+(tp==='err'?'alert-circle':'circle-check')+'" style="font-size:16px;flex-shrink:0" aria-hidden="true"></i><span>'+msg+'</span>';setTimeout(function(){el.classList.remove('show')},5000);}
 function clearAlert(){document.getElementById('alertEl').classList.remove('show')}
 
 function addSolicItem(){
-  sc++;var id=sc;
-  var div=document.createElement('div');div.className='solic-item';div.id='si-'+id;
-  var pills='';
+  sc++;var id=sc;var div=document.createElement('div');div.className='solic-item';div.id='si-'+id;var pills='';
   for(var k in PCFG){pills+='<button class="ppill" onclick="selSP('+id+',\''+k+'\')">'+PCFG[k].l.replace('Pantum ','').replace('Epson ','').replace('Elgin ','')+'</button>'}
   div.innerHTML='<div class="solic-hdr"><span style="font-size:12px;font-weight:600;color:var(--color-text-secondary)"><i class="ti ti-package" style="font-size:14px" aria-hidden="true"></i> Item '+id+'</span><button class="rm-btn" onclick="document.getElementById(\'si-'+id+'\').remove()"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="field"><label>Impressora</label><div class="printer-pills" id="sipp-'+id+'">'+pills+'</div></div><div id="si-insumos-'+id+'" style="display:none"><div class="field"><label>Insumos solicitados</label><div class="chk-list" id="si-chklist-'+id+'"></div></div></div><div class="field" style="margin-top:8px"><label>Observacao</label><textarea id="si-obs-'+id+'" placeholder="Detalhes ou justificativa..."></textarea></div>';
   document.getElementById('solic-items-wrap').appendChild(div);
 }
 
 function selSP(itemId,printer){
-  document.querySelectorAll('#sipp-'+itemId+' .ppill').forEach(function(p){
-    var lbl=PCFG[printer].l.replace('Pantum ','').replace('Epson ','').replace('Elgin ','');
-    p.classList.toggle('sel',p.textContent.trim()===lbl);
-  });
-  var cfg=PCFG[printer];
-  var wrap=document.getElementById('si-insumos-'+itemId);
-  var list=document.getElementById('si-chklist-'+itemId);
-  wrap.style.display='block';
-  list.innerHTML=cfg.it.map(function(it){
-    return '<label class="chk-row"><input type="checkbox" id="sichk-'+itemId+'-'+it.id+'" value="'+it.id+'"><span class="color-dot" style="background:'+it.c+'"></span><span class="chk-label">'+it.l+'</span><input type="number" min="1" value="1" style="width:70px" id="siqty-'+itemId+'-'+it.id+'" onclick="event.stopPropagation()"></label>';
-  }).join('');
+  document.querySelectorAll('#sipp-'+itemId+' .ppill').forEach(function(p){var lbl=PCFG[printer].l.replace('Pantum ','').replace('Epson ','').replace('Elgin ','');p.classList.toggle('sel',p.textContent.trim()===lbl);});
+  var cfg=PCFG[printer];var wrap=document.getElementById('si-insumos-'+itemId);var list=document.getElementById('si-chklist-'+itemId);wrap.style.display='block';
+  list.innerHTML=cfg.it.map(function(it){return '<label class="chk-row"><input type="checkbox" id="sichk-'+itemId+'-'+it.id+'" value="'+it.id+'"><span class="color-dot" style="background:'+it.c+'"></span><span class="chk-label">'+it.l+'</span><input type="number" min="1" value="1" style="width:70px" id="siqty-'+itemId+'-'+it.id+'" onclick="event.stopPropagation()"></label>';}).join('');
   wrap.setAttribute('data-printer',printer);
 }
 
 function addManutItem(){
-  mc++;var id=mc;
-  var div=document.createElement('div');div.className='solic-item';div.id='mi-'+id;
+  mc++;var id=mc;var div=document.createElement('div');div.className='solic-item';div.id='mi-'+id;
   var opts='';for(var i=0;i<EQUIP.length;i++)opts+='<option>'+(i===0?'Impressora':EQUIP[i])+'</option>';
   var topts='';for(var j=0;j<TIPOS.length;j++)topts+='<option>'+TIPOS[j]+'</option>';
   var modelOpts='<option value="">Selecione o modelo...</option>';
-  for(var b=0;b<MODELS_BRAND.length;b++){
-    modelOpts+='<optgroup label="'+MODELS_BRAND[b].brand+'">';
-    for(var m=0;m<MODELS_BRAND[b].m.length;m++)modelOpts+='<option value="'+MODELS_BRAND[b].m[m]+'">'+MODELS_BRAND[b].m[m]+'</option>';
-    modelOpts+='</optgroup>';
-  }
+  for(var b=0;b<MODELS_BRAND.length;b++){modelOpts+='<optgroup label="'+MODELS_BRAND[b].brand+'">';for(var m=0;m<MODELS_BRAND[b].m.length;m++)modelOpts+='<option value="'+MODELS_BRAND[b].m[m]+'">'+MODELS_BRAND[b].m[m]+'</option>';modelOpts+='</optgroup>';}
   modelOpts+='<optgroup label="Outro"><option value="__outro__">Outro (digitar manualmente)</option></optgroup>';
   div.innerHTML='<div class="solic-hdr"><span style="font-size:12px;font-weight:600;color:var(--color-text-secondary)"><i class="ti ti-wrench" style="font-size:14px" aria-hidden="true"></i> Item '+id+'</span><button class="rm-btn" onclick="document.getElementById(\'mi-'+id+'\').remove()"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="row2"><div class="field"><label>Equipamento</label><select id="meq-'+id+'" onchange="onEC('+id+')">'+opts+'</select></div><div class="field"><label>Tipo de servico</label><select id="mtipo-'+id+'">'+topts+'</select></div></div><div class="row2"><div class="field"><label>Quantidade</label><input type="number" min="1" value="1" id="mqty-'+id+'"></div><div class="field" id="mmod-wrap-'+id+'" style="display:none"><label>Modelo da impressora</label><select id="mmod-sel-'+id+'" onchange="onMC('+id+')">'+modelOpts+'</select><div class="custom-input-wrap" id="mmod-custom-wrap-'+id+'"><input type="text" id="mmod-custom-'+id+'" placeholder="Digite o modelo..." oninput="saveCM('+id+')"><p class="hint">Sera salvo para proximas selecoes</p></div></div></div><div class="field"><label>Descricao</label><textarea id="mdesc-'+id+'" placeholder="Descreva o problema..."></textarea></div>';
   document.getElementById('manut-items-wrap').appendChild(div);
@@ -677,285 +572,131 @@ function addManutItem(){
 
 function onEC(id){document.getElementById('mmod-wrap-'+id).style.display=document.getElementById('meq-'+id).value==='Impressora'?'block':'none'}
 function onMC(id){document.getElementById('mmod-custom-wrap-'+id).classList.toggle('show',document.getElementById('mmod-sel-'+id).value==='__outro__')}
-function saveCM(id){
-  var val=document.getElementById('mmod-custom-'+id).value.trim();
-  if(!val)return;
-  document.querySelectorAll('[id^="mmod-sel-"]').forEach(function(sel){
-    var ex=Array.prototype.some.call(sel.options,function(o){return o.value===val});
-    if(!ex){
-      var opt=document.createElement('option');opt.value=val;opt.textContent=val;
-      var og=Array.prototype.find.call(sel.querySelectorAll('optgroup'),function(g){return g.label==='Outro'});
-      if(og)og.prepend(opt);else sel.appendChild(opt);
-    }
-  });
-}
+function saveCM(id){var val=document.getElementById('mmod-custom-'+id).value.trim();if(!val)return;document.querySelectorAll('[id^="mmod-sel-"]').forEach(function(sel){var ex=Array.prototype.some.call(sel.options,function(o){return o.value===val});if(!ex){var opt=document.createElement('option');opt.value=val;opt.textContent=val;var og=Array.prototype.find.call(sel.querySelectorAll('optgroup'),function(g){return g.label==='Outro'});if(og)og.prepend(opt);else sel.appendChild(opt);}});}
 
 function submitSolic(){
-  var escola=sbS?sbS.getValue():'';
-  var nome=document.getElementById('solic-nome').value.trim();
-  
-  // Se for solicitante, usar dados cadastrados
-  if(curUser&&curUser.role==='solicitante'){
-    escola=curUser.escola;
-    nome=curUser.name;
-  }
-  
-  if(!escola){showAlert('Selecione a escola.','err');return}
-  if(!nome){showAlert('Informe o nome do solicitante.','err');return}
+  var escola=sbS?sbS.getValue():'';var nome=document.getElementById('solic-nome').value.trim();
+  if(curUser&&curUser.role==='solicitante'){nome=curUser.name;if(!escola&&curUser.escolas&&curUser.escolas.length>0)escola=curUser.escolas[0];}
+  if(!escola){showAlert('Selecione a escola.','err');return}if(!nome){showAlert('Informe o nome do solicitante.','err');return}
   var items=[];
   document.querySelectorAll('[id^="si-"]').forEach(function(el){
-    if(!el.id.match(/^si-\d+$/))return;
-    var id=el.id.replace('si-','');
-    var wrap=document.getElementById('si-insumos-'+id);
-    if(!wrap||wrap.style.display==='none')return;
-    var printer=wrap.getAttribute('data-printer');
-    if(!printer)return;
-    var cfg=PCFG[printer];
-    var sel=[];
-    cfg.it.forEach(function(it){
-      var chk=document.getElementById('sichk-'+id+'-'+it.id);
-      if(chk&&chk.checked){
-        var qty=document.getElementById('siqty-'+id+'-'+it.id)?.value||1;
-        sel.push({label:it.l,qty:+qty});
-      }
-    });
-    if(sel.length===0)return;
-    var obs=document.getElementById('si-obs-'+id)?.value||'';
-    items.push({printer:cfg.l,insumos:sel,obs:obs});
+    if(!el.id.match(/^si-\d+$/))return;var id=el.id.replace('si-','');var wrap=document.getElementById('si-insumos-'+id);
+    if(!wrap||wrap.style.display==='none')return;var printer=wrap.getAttribute('data-printer');if(!printer)return;
+    var cfg=PCFG[printer];var sel=[];
+    cfg.it.forEach(function(it){var chk=document.getElementById('sichk-'+id+'-'+it.id);if(chk&&chk.checked){var qty=document.getElementById('siqty-'+id+'-'+it.id)?.value||1;sel.push({label:it.l,qty:+qty});}});
+    if(sel.length===0)return;var obs=document.getElementById('si-obs-'+id)?.value||'';items.push({printer:cfg.l,insumos:sel,obs:obs});
   });
   if(items.length===0){showAlert('Adicione ao menos um item com insumo.','err');return}
   var solData={id:Date.now(),escola:escola,nome:nome,data:new Date().toLocaleDateString('pt-BR'),items:items,status:'pendente'};
-  sols.unshift(solData);
-  save();
-  // Enviar para planilha
-  apiPost('solicitarInsumo',{
-    solicitante:nome,
-    escola:escola,
-    data:new Date().toLocaleDateString('pt-BR'),
-    itens:items,
-    observacoes:''
-  });
-  showAlert('Solicitacao enviada e registrada na planilha!','ok');
-  resetSolic();
-  toggleSolicView();
+  sols.unshift(solData);save();
+  apiPost('solicitarInsumo',{solicitante:nome,escola:escola,data:new Date().toLocaleDateString('pt-BR'),itens:items,observacoes:''});
+  showAlert('Solicitacao enviada e registrada na planilha!','ok');resetSolic();toggleSolicView();
 }
 
 function renderSols(){
-  var el=document.getElementById('my-solics');
-  // Filtrar por escola se for solicitante
-  var filtered=sols;
-  if(curUser&&curUser.role==='solicitante'&&curUser.escola){
-    filtered=sols.filter(function(s){return s.escola===curUser.escola});
+  var el=document.getElementById('my-solics');var filtered=sols;
+  if(curUser&&curUser.role==='solicitante'&&curUser.escolas&&curUser.escolas.length>0){
+    filtered=sols.filter(function(s){for(var k=0;k<curUser.escolas.length;k++){if(matchEscola(s.escola,curUser.escolas[k]))return true;}return false;});
   }
   if(filtered.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao registrada ainda.</div>';return}
   var html='';
-  for(var i=0;i<filtered.length;i++){
-    var s=filtered[i];
-    var its='';
-    for(var j=0;j<s.items.length;j++){
-      var it=s.items[j];
-      its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+(it.obs?' - '+it.obs:'')+'</div>';
-    }
-    html+='<div class="card solic-card"><div class="solic-header"><div><div class="solic-school">'+s.escola+'</div><div class="solic-meta">'+s.nome+' - '+s.data+'</div></div><span class="badge '+(s.status==='entregue'?'badge-ok':'badge-pend')+'"><i class="ti ti-'+(s.status==='entregue'?'check':'clock')+'" style="font-size:12px" aria-hidden="true"></i> '+(s.status==='entregue'?'Entregue':'Pendente')+'</span></div>'+its+'</div>';
-  }
+  for(var i=0;i<filtered.length;i++){var s=filtered[i];var its='';
+    for(var j=0;j<s.items.length;j++){var it=s.items[j];its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+(it.obs?' - '+it.obs:'')+'</div>';}
+    html+='<div class="card solic-card"><div class="solic-header"><div><div class="solic-school">'+s.escola+'</div><div class="solic-meta">'+s.nome+' - '+s.data+'</div></div><span class="badge '+(s.status==='entregue'?'badge-ok':s.status==='cancelado'?'badge-cancel':'badge-pend')+'"><i class="ti ti-'+(s.status==='entregue'?'check':s.status==='cancelado'?'ban':'clock')+'" style="font-size:12px" aria-hidden="true"></i> '+(s.status==='entregue'?'Entregue':s.status==='cancelado'?'Cancelado':'Pendente')+'</span></div>'+its+'</div>';}
   el.innerHTML=html;
 }
 
 function renderManut(){
-  var el=document.getElementById('my-manuts');
-  // Filtrar por escola se for solicitante
-  var filtered=manuts;
-  if(curUser&&curUser.role==='solicitante'&&curUser.escola){
-    filtered=manuts.filter(function(m){return m.escola===curUser.escola});
+  var el=document.getElementById('my-manuts');var filtered=manuts;
+  if(curUser&&curUser.role==='solicitante'&&curUser.escolas&&curUser.escolas.length>0){
+    filtered=manuts.filter(function(m){for(var k=0;k<curUser.escolas.length;k++){if(matchEscola(m.escola,curUser.escolas[k]))return true;}return false;});
   }
   if(filtered.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i>Nenhuma solicitacao de manutencao registrada ainda.</div>';return}
   var html='';
-  for(var i=0;i<filtered.length;i++){
-    var m=filtered[i];
-    var its='';
-    for(var j=0;j<m.items.length;j++){
-      var it=m.items[j];
-      its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.equip+' - '+it.tipo+':</span> '+it.desc+'</div>';
-    }
-    html+='<div class="card solic-card"><div class="solic-header"><div><div class="solic-school">'+m.escola+'</div><div class="solic-meta">'+m.nome+' - '+m.data+'</div></div><span class="badge '+(m.status==='concluido'?'badge-ok':'badge-pend')+'"><i class="ti ti-'+(m.status==='concluido'?'check':'clock')+'" style="font-size:12px" aria-hidden="true"></i> '+(m.status==='concluido'?'Concluido':'Pendente')+'</span></div>'+its+'</div>';
-  }
+  for(var i=0;i<filtered.length;i++){var m=filtered[i];var its='';
+    for(var j=0;j<m.items.length;j++){var it=m.items[j];its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.equip+' - '+it.tipo+':</span> '+it.desc+'</div>';}
+    html+='<div class="card solic-card"><div class="solic-header"><div><div class="solic-school">'+m.escola+'</div><div class="solic-meta">'+m.nome+' - '+m.data+'</div></div><span class="badge '+(m.status==='concluido'?'badge-ok':'badge-pend')+'"><i class="ti ti-'+(m.status==='concluido'?'check':'clock')+'" style="font-size:12px" aria-hidden="true"></i> '+(m.status==='concluido'?'Concluido':'Pendente')+'</span></div>'+its+'</div>';}
   el.innerHTML=html;
 }
 
 function renderPend(){
-  var el=document.getElementById('pend-list');
-  var pds=sols.filter(function(s){return s.status==='pendente'});
+  var el=document.getElementById('pend-list');var pds=sols.filter(function(s){return s.status==='pendente'});
   if(pds.length===0){el.innerHTML='<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--color-success)" aria-hidden="true"></i>Nenhuma solicitacao pendente!</div>';return}
   var html='';
-  for(var i=0;i<pds.length;i++){
-    var s=pds[i];
-    var its='';
-    for(var j=0;j<s.items.length;j++){
-      var it=s.items[j];
-      its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+'</div>';
-    }
-    html+='<div class="card"><div class="solic-header"><div><div style="font-weight:600;font-size:14px">'+s.escola+'</div><div style="font-size:12px;color:var(--color-text-secondary)">'+s.nome+' - '+s.data+'</div></div><span class="badge badge-pend"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i> Pendente</span></div>'+its+'<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--color-border)"><button class="btn btn-success btn-sm" onclick="confirmE('+s.id+')"><i class="ti ti-check" style="font-size:14px" aria-hidden="true"></i> Marcar como entregue</button></div></div>';
-  }
+  for(var i=0;i<pds.length;i++){var s=pds[i];var its='';
+    for(var j=0;j<s.items.length;j++){var it=s.items[j];its+='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+'</div>';}
+    html+='<div class="card"><div class="solic-header"><div><div style="font-weight:600;font-size:14px">'+s.escola+'</div><div style="font-size:12px;color:var(--color-text-secondary)">'+s.nome+' - '+s.data+'</div></div><span class="badge badge-pend"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i> Pendente</span></div>'+its+'<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--color-border);display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-success btn-sm" onclick="confirmE('+s.id+')"><i class="ti ti-check" style="font-size:14px" aria-hidden="true"></i> Marcar como entregue</button><button class="btn btn-danger btn-sm" onclick="showCancelModal('+s.id+')"><i class="ti ti-ban" style="font-size:14px" aria-hidden="true"></i> Recusar sem atendimento</button></div></div>';}
   el.innerHTML=html;
 }
 
 function confirmE(id){
   requireAuth(function(){
-    var s=null;
-    for(var i=0;i<sols.length;i++)if(sols[i].id===id){s=sols[i];break}
+    var s=null;for(var i=0;i<sols.length;i++)if(sols[i].id===id){s=sols[i];break}
     if(s){s.status='entregue';s.entregueEm=new Date().toLocaleDateString('pt-BR');s.entregueBy=curUser.name||curUser.email;dels.unshift(JSON.parse(JSON.stringify(s)))}
-    save();
-    // Enviar confirmacao para planilha
-    apiPost('marcarEntregue',{id:'SOL_'+id,entreguePor:curUser.name||curUser.email});
-    showAlert('Entrega confirmada por '+(curUser.name||curUser.email) + ' e registrada na planilha!','ok');
-    renderPend();
+    save();apiPost('marcarEntregue',{id:'SOL_'+id,entreguePor:curUser.name||curUser.email});
+    showAlert('Entrega confirmada por '+(curUser.name||curUser.email)+' e registrada na planilha!','ok');renderPend();
   });
 }
 
 function renderUlt(){
-  var el=document.getElementById('hist-ultimas');
-  if(dels.length===0){el.innerHTML='';return}
-  
-  // Aplicar filtros
-  var filtered=dels.slice();
-  var escola=sbH?sbH.getValue():'';
+  var el=document.getElementById('hist-ultimas');if(dels.length===0){el.innerHTML='';return}
+  var filtered=dels.slice();var escola=sbH?sbH.getValue():'';
   var dataFiltro=document.getElementById('hist-data-filtro')?document.getElementById('hist-data-filtro').value:'';
   var mesAnoFiltro=document.getElementById('hist-mesano-filtro')?document.getElementById('hist-mesano-filtro').value:'';
-  
-  if(escola){filtered=filtered.filter(function(e){return e.escola===escola})}
+  if(escola){filtered=filtered.filter(function(e){return matchEscola(e.escola,escola)})}
   if(dataFiltro){filtered=filtered.filter(function(e){var d=e.entregueEm||e.data;return d===dataFiltro})}
   if(mesAnoFiltro){filtered=filtered.filter(function(e){var d=e.entregueEm||e.data;var parts=d.split('/');var dma=parts[1]+'/'+parts[2];return dma===mesAnoFiltro})}
-  
-  // Paginação
-  var start=(histPage-1)*HIST_PER_PAGE;
-  var end=start+HIST_PER_PAGE;
-  var paged=filtered.slice(start,end);
-  
+  var start=(histPage-1)*HIST_PER_PAGE;var end=start+HIST_PER_PAGE;var paged=filtered.slice(start,end);
   if(paged.length===0){el.innerHTML='<div class="empty-state">Nenhuma entrega encontrada.</div>';renderHistPag(filtered.length);return}
-  
   var html='<div class="card"><div class="card-title"><i class="ti ti-history" aria-hidden="true"></i> Ultimas entregas</div>';
-  for(var i=0;i<paged.length;i++){
-    var e=paged[i];
-    var its='';
-    for(var j=0;j<e.items.length;j++){
-      var it=e.items[j];
-      its+='<div class="hist-detail"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+'</div>';
-    }
-    html+='<div class="hist-item"><div class="hist-header"><span class="hist-date">'+(e.entregueEm||e.data)+'</span><span class="badge badge-ok"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i> Entregue</span></div><div class="hist-detail"><span style="font-weight:500">'+e.escola+'</span> - Solicitante: '+e.nome+'</div>'+its+'<div class="hist-by">Confirmado por: '+(e.entregueBy||'')+'</div></div>';
-  }
-  html+='</div>';
-  el.innerHTML=html;
-  renderHistPag(filtered.length);
+  for(var i=0;i<paged.length;i++){var e=paged[i];var its='';
+    for(var j=0;j<e.items.length;j++){var it=e.items[j];its+='<div class="hist-detail"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+'</div>';}
+    html+='<div class="hist-item"><div class="hist-header"><span class="hist-date">'+(e.canceladoEm||e.entregueEm||e.data)+'</span><span class="badge '+(e.status==='cancelado'?'badge-cancel':'badge-ok')+'"><i class="ti ti-'+(e.status==='cancelado'?'ban':'check')+'" style="font-size:12px" aria-hidden="true"></i> '+(e.status==='cancelado'?'Cancelado':'Entregue')+'</span></div><div class="hist-detail"><span style="font-weight:500">'+e.escola+'</span> - Solicitante: '+e.nome+'</div>'+its+'<div class="hist-by">'+(e.status==='cancelado'?'Cancelado por: ':'Confirmado por: ')+(e.canceladoBy||e.entregueBy||'')+'</div>'+(e.cancelReason?'<div class="hist-by" style="margin-top:4px;font-size:12px;color:var(--color-text-secondary)">Motivo: '+e.cancelReason+'</div>':'')+'</div>';}
+  html+='</div>';el.innerHTML=html;renderHistPag(filtered.length);
 }
 
-function renderHistPag(total){
-  var el=document.getElementById('hist-pagination');
-  var totalPages=Math.ceil(total/HIST_PER_PAGE);
-  if(totalPages<=1){el.innerHTML='';return}
-  var html='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Página '+histPage+' de '+totalPages+' ('+total+' total)</div>';
-  if(histPage>1)html+='<button class="btn btn-sm btn-ghost" onclick="histPage--;renderUlt()"><i class="ti ti-arrow-left" style="font-size:14px" aria-hidden="true"></i> Anterior</button> ';
-  if(histPage<totalPages)html+='<button class="btn btn-sm btn-ghost" onclick="histPage++;renderUlt()"><i class="ti ti-arrow-right" style="font-size:14px" aria-hidden="true"></i> Proxima</button>';
-  el.innerHTML=html;
-}
+function renderHistPag(total){var el=document.getElementById('hist-pagination');var totalPages=Math.ceil(total/HIST_PER_PAGE);if(totalPages<=1){el.innerHTML='';return}var html='<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Pagina '+histPage+' de '+totalPages+' ('+total+' total)</div>';if(histPage>1)html+='<button class="btn btn-sm btn-ghost" onclick="histPage--;renderUlt()"><i class="ti ti-arrow-left" style="font-size:14px" aria-hidden="true"></i> Anterior</button> ';if(histPage<totalPages)html+='<button class="btn btn-sm btn-ghost" onclick="histPage++;renderUlt()"><i class="ti ti-arrow-right" style="font-size:14px" aria-hidden="true"></i> Proxima</button>';el.innerHTML=html;}
 
-function clearHistFilters(){
-  if(sbH)sbH.clear();
-  document.getElementById('hist-data-filtro').value='';
-  document.getElementById('hist-mesano-filtro').value='';
-  histPage=1;
-  renderUlt();
-}
+function clearHistFilters(){if(sbH)sbH.clear();document.getElementById('hist-data-filtro').value='';document.getElementById('hist-mesano-filtro').value='';histPage=1;renderUlt();}
 
 function renderHist(){
-  var escola=sbH?sbH.getValue():'';
-  var el=document.getElementById('hist-result');
-  if(!escola){el.innerHTML='';return}
-  var entries=[];
-  for(var i=0;i<dels.length;i++)if(dels[i].escola===escola)entries.push(dels[i]);
+  var escola=sbH?sbH.getValue():'';var el=document.getElementById('hist-result');if(!escola){el.innerHTML='';return}
+  var entries=[];for(var i=0;i<dels.length;i++)if(matchEscola(dels[i].escola,escola))entries.push(dels[i]);
   if(entries.length===0){el.innerHTML='<div class="empty-state">Nenhuma entrega registrada para esta escola.</div>';return}
   var html='<div class="card"><div class="card-title"><i class="ti ti-history" aria-hidden="true"></i> Historico - '+escola+'</div>';
-  for(var j=0;j<entries.length;j++){
-    var e=entries[j];
-    var its='';
-    for(var k=0;k<e.items.length;k++){
-      var it=e.items[k];
-      its+='<div class="hist-detail"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+'</div>';
-    }
-    html+='<div class="hist-item"><div class="hist-header"><span class="hist-date">'+e.entregueEm+'</span><span class="badge badge-ok"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i> Entregue</span></div><div class="hist-detail">Solicitante: '+e.nome+'</div>'+its+'<div class="hist-by">Confirmado por: '+e.entregueBy+'</div></div>';
-  }
-  html+='</div>';
-  el.innerHTML=html;
+  for(var j=0;j<entries.length;j++){var e=entries[j];var its='';for(var k=0;k<e.items.length;k++){var it=e.items[k];its+='<div class="hist-detail"><span style="font-weight:500">'+it.printer+':</span> '+it.insumos.map(function(x){return x.label+' x'+x.qty}).join(', ')+'</div>';}
+    html+='<div class="hist-item"><div class="hist-header"><span class="hist-date">'+e.entregueEm+'</span><span class="badge badge-ok"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i> Entregue</span></div><div class="hist-detail">Solicitante: '+e.nome+'</div>'+its+'<div class="hist-by">Confirmado por: '+e.entregueBy+'</div></div>';}
+  html+='</div>';el.innerHTML=html;
 }
 
 function submitManut(){
-  var escola=sbM?sbM.getValue():'';
-  var nome=document.getElementById('manut-nome').value.trim();
-  
-  // Se for solicitante, usar dados cadastrados
-  if(curUser&&curUser.role==='solicitante'){
-    escola=curUser.escola;
-    nome=curUser.name;
-  }
-  
-  if(!escola){showAlert('Selecione a escola.','err');return}
-  if(!nome){showAlert('Informe o solicitante.','err');return}
+  var escola=sbM?sbM.getValue():'';var nome=document.getElementById('manut-nome').value.trim();
+  if(curUser&&curUser.role==='solicitante'){nome=curUser.name;if(!escola&&curUser.escolas&&curUser.escolas.length>0)escola=curUser.escolas[0];}
+  if(!escola){showAlert('Selecione a escola.','err');return}if(!nome){showAlert('Informe o solicitante.','err');return}
   var items=[];
   document.querySelectorAll('[id^="mi-"]').forEach(function(el){
-    if(!el.id.match(/^mi-\d+$/))return;
-    var id=el.id.replace('mi-','');
-    var equip=document.getElementById('meq-'+id)?.value;
-    var tipo=document.getElementById('mtipo-'+id)?.value;
-    var qty=document.getElementById('mqty-'+id)?.value||1;
-    var selEl=document.getElementById('mmod-sel-'+id);
-    var modelo='';
-    if(selEl&&selEl.value&&selEl.value!=='__outro__')modelo=selEl.value;
-    else if(selEl&&selEl.value==='__outro__')modelo=document.getElementById('mmod-custom-'+id)?.value||'';
-    var desc=document.getElementById('mdesc-'+id)?.value||'';
-    items.push({equip:equip,tipo:tipo,qty:qty,modelo:modelo,desc:desc});
+    if(!el.id.match(/^mi-\d+$/))return;var id=el.id.replace('mi-','');
+    var equip=document.getElementById('meq-'+id)?.value;var tipo=document.getElementById('mtipo-'+id)?.value;var qty=document.getElementById('mqty-'+id)?.value||1;
+    var selEl=document.getElementById('mmod-sel-'+id);var modelo='';if(selEl&&selEl.value&&selEl.value!=='__outro__')modelo=selEl.value;else if(selEl&&selEl.value==='__outro__')modelo=document.getElementById('mmod-custom-'+id)?.value||'';
+    var desc=document.getElementById('mdesc-'+id)?.value||'';items.push({equip:equip,tipo:tipo,qty:qty,modelo:modelo,desc:desc});
   });
   if(items.length===0){showAlert('Adicione ao menos um item.','err');return}
-  manuts.unshift({id:'manut-'+Date.now(),escola:escola,nome:nome,data:new Date().toLocaleDateString('pt-BR'),items:items,status:'pendente'});
-  save();
-  // Enviar para planilha
-  apiPost('solicitarManutencao',{
-    solicitante:nome,
-    escola:escola,
-    data:new Date().toLocaleDateString('pt-BR'),
-    itens:items,
-    observacoes:''
-  });
-  showAlert('Solicitacao de manutencao enviada e registrada na planilha!','ok');
-  resetManut();
-  toggleManutView();
+  manuts.unshift({id:'manut-'+Date.now(),escola:escola,nome:nome,data:new Date().toLocaleDateString('pt-BR'),items:items,status:'pendente'});save();
+  apiPost('solicitarManutencao',{solicitante:nome,escola:escola,data:new Date().toLocaleDateString('pt-BR'),itens:items,observacoes:''});
+  showAlert('Solicitacao de manutencao enviada e registrada na planilha!','ok');resetManut();toggleManutView();
 }
 
 function resetSolic(){if(sbS)sbS.clear();document.getElementById('solic-nome').value='';document.getElementById('solic-items-wrap').innerHTML='';sc=0}
 function resetManut(){if(sbM)sbM.clear();document.getElementById('manut-nome').value='';document.getElementById('manut-items-wrap').innerHTML='';mc=0}
 
-// Init
 var sbS,sbM,sbH;
-
 function init(){
-  load();
-  sbS=sb('sb-solic-escola');
-  sbM=sb('sb-manut-escola');
-  sbH=sb('sb-hist-escola',function(v){histPage=1;renderUlt()});
-  sbRegEscola=sb('sb-reg-escola');
-  
-  // Listeners para filtros de data no histórico
-  var dataFiltro=document.getElementById('hist-data-filtro');
-  var mesAnoFiltro=document.getElementById('hist-mesano-filtro');
+  load();sbS=sb('sb-solic-escola');sbM=sb('sb-manut-escola');sbH=sb('sb-hist-escola',function(v){histPage=1;renderUlt()});
+  var dataFiltro=document.getElementById('hist-data-filtro');var mesAnoFiltro=document.getElementById('hist-mesano-filtro');
   if(dataFiltro){dataFiltro.addEventListener('change',function(){histPage=1;renderUlt()})}
   if(mesAnoFiltro){mesAnoFiltro.addEventListener('change',function(){histPage=1;renderUlt()})}
-  
-  renderUlt();
-  goEntregaSub('menu');
-  renderSols();
-  renderManut();
-  initGL();
-  // Carregar solicitacoes pendentes da planilha
-  loadPendentesDaAPI();
+  renderUlt();goEntregaSub('menu');renderSols();renderManut();initGL();
+  loadPendentesDaAPI();carregarConfigUsuarios();
 }
-
 document.addEventListener('DOMContentLoaded',init);
 </script>
