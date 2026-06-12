@@ -293,6 +293,7 @@ var gsi=null;
 var histPage=1, HIST_PER_PAGE=20;
 var usuarios=[], sbRegEscola=null;
 var configUsuarios=[];
+var selectedEscolasReg=[];
 
 function isCoordenador(email){
   email=email.toLowerCase().trim();
@@ -386,11 +387,13 @@ function findUsuario(email){
 }
 
 function showRegisterModal(){
+  selectedEscolasReg=[];
   document.getElementById('registerModal').classList.add('show');
   renderRegEscolas('');
   document.getElementById('reg-nome').value=tempUser.nome;
   document.getElementById('reg-err').style.display='none';
   document.getElementById('reg-search-escola').value='';
+  updateRegEscolasCount();
 }
 
 function renderRegEscolas(filtro){
@@ -404,42 +407,35 @@ function renderRegEscolas(filtro){
     var label=document.createElement('label');
     label.className='chk-row';
     var chk=document.createElement('input');chk.type='checkbox';chk.value=res[i];chk.style.width='16px';chk.style.height='16px';
-    var jaMarcado=isEscolaMarcada(res[i]);
-    if(jaMarcado)chk.checked=true;
-    chk.addEventListener('change',function(){updateRegEscolasCount()});
+    if(selectedEscolasReg.indexOf(res[i])!==-1)chk.checked=true;
+    chk.addEventListener('change',function(){toggleEscolaReg(this.value,this.checked)});
     var span=document.createElement('span');span.className='chk-label';span.textContent=res[i];
     label.appendChild(chk);label.appendChild(span);container.appendChild(label);
   }
 }
 
+function toggleEscolaReg(escola,checked){
+  if(checked){if(selectedEscolasReg.indexOf(escola)===-1)selectedEscolasReg.push(escola)}
+  else{selectedEscolasReg=selectedEscolasReg.filter(function(e){return e!==escola})}
+  updateRegEscolasCount();
+}
+
 function isEscolaMarcada(escola){
-  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
-  for(var i=0;i<checks.length;i++){if(checks[i].value===escola)return true}
-  return false;
+  return selectedEscolasReg.indexOf(escola)!==-1;
 }
 
 function filterRegEscolas(){
   var termo=document.getElementById('reg-search-escola').value;
-  var checksMarcados=[];
-  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
-  for(var i=0;i<checks.length;i++)checksMarcados.push(checks[i].value);
   renderRegEscolas(termo);
-  var novosChecks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]');
-  for(var i=0;i<novosChecks.length;i++){
-    if(checksMarcados.indexOf(novosChecks[i].value)!==-1)novosChecks[i].checked=true;
-  }
   updateRegEscolasCount();
 }
 
 function updateRegEscolasCount(){
-  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
-  document.getElementById('reg-escolas-count').textContent=checks.length;
+  document.getElementById('reg-escolas-count').textContent=selectedEscolasReg.length;
 }
 
 function getSelectedEscolas(){
-  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
-  var selected=[];for(var i=0;i<checks.length;i++)selected.push(checks[i].value);
-  return selected;
+  return selectedEscolasReg.slice();
 }
 
 function completeRegistration(){
