@@ -32,6 +32,9 @@ function doGet(e) {
     return jsonOutput(getLogs(), e);
   } else if (action === "getConfigUsuarios") {
     return jsonOutput(getConfigUsuarios(), e);
+  } else if (action === "buscarUsuario") {
+    const email = e?.parameter?.email || "";
+    return jsonOutput(buscarUsuario(email), e);
   } else {
     return HtmlService.createHtmlOutput(
       '<h2>Sistema de Gestão de Insumos - API</h2><p>Use os parâmetros: ?action=getEscolas, getConfig, getPendentes, getEntregas&escola=NOME, getEstoque, getLogs</p>'
@@ -48,7 +51,8 @@ function doPost(e) {
       "registrarEntrega": () => registrarEntrega(data.payload),
       "solicitarInsumo": () => solicitarInsumo(data.payload),
       "marcarEntregue": () => marcarEntregue(data.payload),
-      "solicitarManutencao": () => solicitarManutencao(data.payload)
+      "solicitarManutencao": () => solicitarManutencao(data.payload),
+      "registrarUsuario": () => registrarUsuario(data.payload)
     };
     
     if (actions[action]) {
@@ -376,4 +380,89 @@ function verificarPermissao(email) {
     }
   }
   return false;
+}
+
+// ============================================
+// FUNÇÕES DE GERENCIAMENTO DE USUÁRIOS
+// ============================================
+
+function registrarUsuario(payload) {
+  if (!payload || !payload.email) return { success: false, error: "Email obrigatório" };
+  
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let aba = ss.getSheetByName("Config_Usuarios");
+  
+  if (!aba) {
+    aba = ss.insertSheet("Config_Usuarios");
+    aba.getRange(1, 1, 1, 5).setValues([["Email", "Nome", "Perfil", "Escolas", "DataCadastro"]]);
+    aba.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#f3f3f3");
+  }
+  
+  // Garantir que a aba tenha coluna Escolas
+  if (aba.getLastColumn() < 4) {
+    aba.getRange(1, 4).setValue("Escolas");
+    aba.getRange(1, 5).setValue("DataCadastro");
+  }
+  
+  const email = payload.email.toLowerCase().trim();
+  const nome = payload.nome || "";
+  const perfil = payload.perfil || "SOLICITANTE";
+  const escolas = Array.isArray(payload.escolas) ? payload.escolas.join(";") : (payload.escolas || "");
+  const dataCadastro = payload.dataCadastro || new Date().toLocaleDateString("pt-BR");
+  
+  const dados = aba.getDataRange().getValues();
+  let rowIndex = -1;
+  
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i][0] && dados[i][0].toString().trim().toLowerCase() === email) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex > 0) {
+    // Atualizar registro existente
+    aba.getRange(rowIndex, 2).setValue(nome);
+    aba.getRange(rowIndex, 3).setValue(perfil);
+    aba.getRange(rowIndex, 4).setValue(escolas);
+    aba.getRange(rowIndex, 5).setValue(dataCadastro);
+  } else {
+    // Criar novo registro
+    aba.appendRow([email, nome, perfil, escolas, dataCadastro]);
+  }
+  
+  registrarLog(nome || email, "REGISTRO_USUARIO", "Email: " + email + ", Escolas: " + escolas);
+  
+  return { success: true, message: "Comportamento registrado na planilha!" };
+}
+
+function buscarUsuario(email) {
+  if (!email) return { found: false };
+  
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const aba = ss.getSheetByName("Config_Usuarios");
+  if (!aba) return { found: false };
+  
+  const dados = aba.getDataRange().getValues();
+  
+  for (let i = 1; i < dados.length; i++) {
+    const emailRow = dados[i][0] ? dados[i][0].toString().trim().toLowerCase() : "";
+    if (emailRow === email.toLowerCase().trim()) {
+      const nome = dados[i][1] ? dados[i][1].toString().trim() : "";
+      const perfil = dados[i][2] ? dados[i][2].toString().trim().toUpperCase() : "";
+      const escolasStr = dados[i][3] ? dados[i][3].toString().trim() : "";
+      const dataCadastro = dados[i][4] ? dados[i][4].toString().trim() : "";
+      const escolas = escolasStr ? escolasStr.split(";").map(function(s){ return s.trim(); }).filter(function(s){ return s; }) : [];
+      
+      return {
+        found: true,
+        email: email.toLowerCase(),
+        nome: nome,
+        perfil: perfil,
+        escolas: escolas,
+        dataCadastro: dataCadastro
+      };
+    }
+  }
+  return { found: false };
 }

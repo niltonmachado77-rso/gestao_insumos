@@ -375,9 +375,27 @@ function processUserData(u){
     updateUserUI(curUser);
     if(authCb){authCb();authCb=null}
   }else{
-    tempUser={email:email,nome:nome,foto:foto};
-    showRegisterModal();
+    buscarUsuarioPlanilha(email,function(usuarioPlanilha){
+      if(usuarioPlanilha&&usuarioPlanilha.found){
+        var nomePlanilha=usuarioPlanilha.nome||nome;
+        var escolasPlanilha=Array.isArray(usuarioPlanilha.escolas)?usuarioPlanilha.escolas:[];
+        curUser={email:email,name:nomePlanilha,role:'solicitante',picture:foto,escolas:escolasPlanilha,escola:escolasPlanilha.length>0?escolasPlanilha[0]:''};
+        usuarios.push({email:email,nome:nomePlanilha,escolas:escolasPlanilha,escola:escolasPlanilha.length>0?escolasPlanilha[0]:''});
+        save();
+        updateUserUI(curUser);
+      }else{
+        tempUser={email:email,nome:nome,foto:foto};
+        showRegisterModal();
+      }
+    });
   }
+}
+
+function buscarUsuarioPlanilha(email,cb){
+  apiGet('buscarUsuario&email='+encodeURIComponent(email),function(err,data){
+    if(err||!data||!data.found){if(cb)cb(null);return}
+    if(cb)cb(data);
+  });
 }
 
 function findUsuario(email){
@@ -444,7 +462,9 @@ function completeRegistration(){
   var err=document.getElementById('reg-err');
   if(!nome){err.textContent='Informe seu nome.';err.style.display='block';return}
   if(escolasSelecionadas.length===0){err.textContent='Selecione ao menos uma escola.';err.style.display='block';return}
-  usuarios.push({email:tempUser.email,nome:nome,escolas:escolasSelecionadas,escola:escolasSelecionadas[0],dataCadastro:new Date().toLocaleDateString('pt-BR')});
+  var payload={email:tempUser.email,nome:nome,perfil:'SOLICITANTE',escolas:escolasSelecionadas,dataCadastro:new Date().toLocaleDateString('pt-BR')};
+  apiPost('registrarUsuario',payload);
+  usuarios.push({email:tempUser.email,nome:nome,escolas:escolasSelecionadas,escola:escolasSelecionadas[0],dataCadastro:payload.dataCadastro});
   save();
   curUser={email:tempUser.email,name:nome,role:'solicitante',picture:tempUser.foto,escolas:escolasSelecionadas,escola:escolasSelecionadas[0]};
   updateUserUI(curUser);
