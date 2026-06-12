@@ -111,10 +111,32 @@ optgroup{font-weight:600;font-size:12px}
 .solic-card .solic-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .solic-card .solic-school{font-weight:600;font-size:14px}
 .solic-card .solic-meta{font-size:12px;color:var(--color-text-secondary)}
+.reg-search{margin-bottom:8px}
+.reg-search input{width:100%;padding:8px 12px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:13px;background:var(--color-bg-input)}
+.reg-search input:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.reg-escolas-list{max-height:250px;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius);padding:4px}
+.reg-escolas-list .chk-row{border:none;border-bottom:1px solid var(--color-border);border-radius:0;padding:6px 10px}
+.reg-escolas-list .chk-row:last-child{border-bottom:none}
 @media(max-width:600px){
-body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}.row2{grid-template-columns:1fr!important}.sub-opt-grid{grid-template-columns:1fr!important}.footer-act{flex-direction:column}.footer-act .btn{width:100%;justify-content:center}select,input,.btn{min-height:44px;font-size:15px}.tab{font-size:12px;padding:8px 6px;min-width:60px;word-break:keep-all}.tab i{font-size:14px}.badge{font-size:10px;word-break:keep-all}.solic-school{font-size:13px}.card{padding:1rem}.card-title{font-size:13px}.modal-box{max-width:95%}.ppill{font-size:11px;padding:5px 10px}.chk-label{font-size:12px}.sb-input{font-size:14px}}
+body{font-size:15px}.app-header{flex-direction:column;align-items:flex-start}
+.tabs{flex-direction:column;gap:8px}
+.tab{width:100%;min-width:unset;font-size:15px;padding:14px 16px;justify-content:flex-start}
+.row2{grid-template-columns:1fr!important}
+.sub-opt-grid{grid-template-columns:1fr!important}
+.footer-act{flex-direction:column}.footer-act .btn{width:100%;justify-content:center}
+select,input,.btn{min-height:44px;font-size:15px}
+.badge{font-size:10px;word-break:keep-all}
+.solic-school{font-size:13px}
+.card{padding:1rem}.card-title{font-size:13px}
+.modal-box{max-width:95%}
+.ppill{font-size:11px;padding:5px 10px}
+.chk-label{font-size:12px}
+.sb-input{font-size:14px}
+.reg-escolas-list{max-height:200px}
+}
 @media(max-width:400px){
-.tab{font-size:11px;padding:6px 4px;min-width:50px}.tabs{gap:4px}.sub-opt .opt-title{font-size:13px}.sub-opt .opt-desc{font-size:11px}}
+.sub-opt .opt-title{font-size:13px}.sub-opt .opt-desc{font-size:11px}
+}
 </style>
 <h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Sistema de gestao de insumos e manutencao - Secretaria de Educacao de Remanso</h2>
 <div class="app">
@@ -226,7 +248,7 @@ Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-
   </div>
 </div>
 <div class="modal-overlay" id="registerModal">
-<div class="modal-box">
+<div class="modal-box" style="max-height:85vh;overflow-y:auto">
 <div class="modal-title"><i class="ti ti-user-plus" style="font-size:20px;color:var(--color-primary)" aria-hidden="true"></i> Primeiro acesso</div>
 <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Bem-vindo! Preencha seus dados para concluir o cadastro. Selecione uma ou mais escolas que voce atende.</p>
 <div class="field">
@@ -235,7 +257,8 @@ Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-
 </div>
 <div class="field">
 <label>Escolas / Unidades</label>
-<div id="reg-escolas-container" style="max-height:300px;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius);padding:8px"></div>
+<div class="reg-search"><input type="text" id="reg-search-escola" placeholder="Buscar escola..." oninput="filterRegEscolas()"></div>
+<div id="reg-escolas-container" class="reg-escolas-list"></div>
 </div>
 <div style="margin-top:8px;font-size:12px;color:var(--color-text-tertiary)"><span id="reg-escolas-count">0</span> escola(s) selecionada(s)</div>
 <div id="reg-err" style="font-size:12px;color:var(--color-danger);margin-bottom:8px;display:none;text-align:center"></div>
@@ -250,7 +273,7 @@ Veja: <a href="https://github.com/niltonmachado77-rso/gestao_insumos#configurar-
 var ESCOLAS=["SecEdu - Neila","SecEdu - Luciana","SecEdu - Tovinho","SecEdu - Dir.Formacao (Joelma)","SecEdu - Dir.Gestao Escolar (Merisvalda)","SecEdu - Nucleos","SecEdu - Censo/IDS","SecEdu - Compras","Prefeitura","CAEE - Irma Joana Margarida Gasparin","Associacao Sao Jose de Remanso - Quadra 02","CM Deputado Theodulo Albuquerque - Quadra 20","CM Eraldo Tinoco Melo - Quadra 14","CM Ruy Barbosa - Quadra 07","Creche M Profa. Marina Maria de Araujo Campinho - Vila Matilde","EMI Dra. Zilda Arns - Quadra 10","EM Dr. Demosthenes Guanaes Pereira - Quadra 02","EMI Chapeuzinho Vermelho - Quadra 01","EMI Olga Dias Almeida - Quadra 16","EMI Pequeno Principe - Quadra 11","EMI Profa. Florinda Silva Castelo Branco - Vila Santana","EMI Sao Francisco - Vila Dalvina II","EMI Tia Anastacia - Quadra 02","EM Profa. Alice Dantas","EM Profa. Cleonice Soeiro Castelo Branco - Vila Santana","EM Profa. Diomar Martins - Quadra 17","EM Profa. Iracy Ferreira de Castro - Quadra 20","EM Profa. Isolina Nunes Barbosa - BNH","EM Wilson Lins de Albuquerque - Area Industrial","EM Profa. Longhina Rogovshi Evangelista - PESTALOZZI - Quadra 02","CM Antonio Borges de Vargas - Jatoba","CM Basilio Ferreira Primo - Cacimba do Basilio","CM Jose Desiderio","CM Nossa Senhora Aparecida - Vila Aparecida","CM Olindina Sa Bandeira - Novo Marcos","CM Prof. Dionisio - Xique-Xique","CM Profa. Zilnoura Moura - Malhadinha","CM Santo Antonio - Estacada","EM Ivoneide Maria - Vila Aparecida","EM Alexandre Rodrigues Amorim - Pimenteira","EM Ana Nery - Sitio Melancia","EM Arco Iris - Cala Boca","EM Carlos Mariguella - Assentamento Canaa","EM Clotilde Vaz de Oliveira - Novo Marcos","EM Delza Goncalves da Silva - Malhadinha","EM Dom Jose Rodrigues - Suvela","EM Dom Pedro II - Caldeirao da Terra","CM Dr. Demosthenes Guanaes - Espinheiro","EM Frei Henrique - Pote","EMI Profa. Nilza Rosa de Negreiros Borges - Malhadinha","EM Irma Dulce - Lagoa do Tamburil","EM Jose Desiderio","EM Jose Rodrigues - Lagoa do Jose Rodrigues","EM Jose Vicente dos Santos - Sanharo","EM Joao Guariroba Lopes - Ventura","EM Joao Paulo I - Estreito","EM Maria Salome da Silva - Caititu","EM Mariano Antonio Celestino - Cacimba do Genipapo","EM Nossa Senhora da Conceicao - Nova Lina","EM Novo Horizonte - Tabuleiro","EM Padre Herculano - Capivara","EM Padre Jose Daniel Potter - Lagoa do Sao Bento","EM Pedro Alvares Cabral - Mancambira de Flecha","EM Pedro Jose dos Passos - Formoso","EM Profa. Deulzuita Ferreira Alves - Martinha","EM Profa. Eunice Brito Alves - Garajau","EM Profa. Julieta Silva Castelo Branco - Tanque Velho","EM Profa. Mariinha - Fazenda Santa Maria","EM Profa. Vera Castelo Branco Teixeira - Mandu","EM Reinaldo Ribeiro Lopes - Lagoa dos Cavalos","EM Rodolfo Carvalho - Lage","EM Sagrado Coracao de Jesus - Canoa dos Brito","EM Santa Terezinha - Jatobazeiro da Terezinha","EM Semeando - Pau D'Arco","EM Sao Jose - Caldeirao do Umbuzeiro","EM Sao Lucas - Fazenda Sao Bento","EM Sao Lucas - Piedade de Baixo","GE Ambrosio Gomes dos Santos - Tamburil","GE Bom Jesus da Lapa - Pau ferro","GE Decio Castelo Branco - Lagoa do Barro","GE Dom Tomaz Guilherme Murphy - Planta","GE Dr. Delio Ledoux - Caldeirao do Sal","GE Estandislau Moura do Carmo - Lagoa dos Bois","GE Juliao Soares - Negros","GE Nossa Senhora do Desterro - Desterro","GE Princesa Isabel - Tocas","GE Profa. Valdete Freire - Mastruz","GE Santa Luzia - Iguarape","GE Santo Andre - Papagaio","GE Santo Antonio de Padua - Campo Maior","GE Santos Dumont - Tamburil","GE Sao Judas Tadeu - Caldeirao do Cafe","Morro Branco - Morro Branco","EM Licia Maria Pires - Aroeira","EM Profa. Cirene Borges - Alto Alegre (Alto Grande)","GE Bom Pastor - Bom Principio","GE Educador Paulo Freire - Pedra da Onca","GE Joel Felix de Andrade - Salina do Brejo","GE Jose Batista Ferreira da Silva - Cantinho","GE Santa Isabel - Barra da Induema","GE SAO GABRIEL - Barra do Sao Gabriel","GE Sao Marcos - Salina do Brejo"];
 var SECEDU_LABEL="Secretaria de Educação";
 function getEscolasExibicao(){var out=[];var temSecEdu=false;for(var i=0;i<ESCOLAS.length;i++){if(isSecEdu(ESCOLAS[i])){if(!temSecEdu){temSecEdu=true;out.push(SECEDU_LABEL)}}else{out.push(ESCOLAS[i])}}return out}
-function isSecEdu(nome){return nome===SECEDU_LABEL||nome.toLowerCase().indexOf('sec edu')!==-1||nome.toLowerCase().startsWith('sec edu')}
+function isSecEdu(nome){if(!nome)return false;var n=nome.toLowerCase().trim();return n===SECEDU_LABEL.toLowerCase()||n.startsWith('secedu -')||n.startsWith('sec edu -')}
 function matchEscola(escolaSolic,escolaUser){if(escolaUser===SECEDU_LABEL){return isSecEdu(escolaSolic)}return escolaSolic===escolaUser}
 
 var MODELS_BRAND=[{brand:'Epson',m:['Epson L3150','Epson L3250','Epson L4260','Epson L5590']},{brand:'Pantum',m:['Pantum BM5100ADW','Pantum BM5110ADW']},{brand:'Kyocera',m:['Kyocera ECOSYS N2040DN/L','Kyocera ECOSYS N2035DN/L']}];
@@ -359,18 +382,47 @@ function findUsuario(email){
 
 function showRegisterModal(){
   document.getElementById('registerModal').classList.add('show');
-  var container=document.getElementById('reg-escolas-container');
-  container.innerHTML='';
-  for(var i=0;i<ESCOLAS.length;i++){
-    var label=document.createElement('label');
-    label.className='chk-row';label.style.marginBottom='0';label.style.borderRadius='0';label.style.border='none';label.style.borderBottom='1px solid var(--color-border)';
-    var chk=document.createElement('input');chk.type='checkbox';chk.value=ESCOLAS[i];chk.style.width='16px';chk.style.height='16px';
-    chk.addEventListener('change',function(){updateRegEscolasCount()});
-    var span=document.createElement('span');span.className='chk-label';span.textContent=ESCOLAS[i];
-    label.appendChild(chk);label.appendChild(span);container.appendChild(label);
-  }
+  renderRegEscolas('');
   document.getElementById('reg-nome').value=tempUser.nome;
   document.getElementById('reg-err').style.display='none';
+  document.getElementById('reg-search-escola').value='';
+}
+
+function renderRegEscolas(filtro){
+  var container=document.getElementById('reg-escolas-container');
+  var exibicao=getEscolasExibicao();
+  var t=(filtro||'').toLowerCase().trim();
+  var res=exibicao;
+  if(t){res=exibicao.filter(function(e){return e.toLowerCase().indexOf(t)!==-1})}
+  container.innerHTML='';
+  for(var i=0;i<res.length;i++){
+    var label=document.createElement('label');
+    label.className='chk-row';
+    var chk=document.createElement('input');chk.type='checkbox';chk.value=res[i];chk.style.width='16px';chk.style.height='16px';
+    var jaMarcado=isEscolaMarcada(res[i]);
+    if(jaMarcado)chk.checked=true;
+    chk.addEventListener('change',function(){updateRegEscolasCount()});
+    var span=document.createElement('span');span.className='chk-label';span.textContent=res[i];
+    label.appendChild(chk);label.appendChild(span);container.appendChild(label);
+  }
+}
+
+function isEscolaMarcada(escola){
+  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
+  for(var i=0;i<checks.length;i++){if(checks[i].value===escola)return true}
+  return false;
+}
+
+function filterRegEscolas(){
+  var termo=document.getElementById('reg-search-escola').value;
+  var checksMarcados=[];
+  var checks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]:checked');
+  for(var i=0;i<checks.length;i++)checksMarcados.push(checks[i].value);
+  renderRegEscolas(termo);
+  var novosChecks=document.querySelectorAll('#reg-escolas-container input[type=checkbox]');
+  for(var i=0;i<novosChecks.length;i++){
+    if(checksMarcados.indexOf(novosChecks[i].value)!==-1)novosChecks[i].checked=true;
+  }
   updateRegEscolasCount();
 }
 

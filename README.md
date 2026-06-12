@@ -134,11 +134,103 @@ O Apps Script criará automaticamente estas abas na planilha:
 gestao_insumos/
 ├── gestao_insumos_v3.html   ← App principal (HTML + CSS + JS)
 ├── config.js                 ← Configuração da API
-├── gs_webapp.gs              ← Google Apps Script (cópia para deploy)
+├── codigo.gs                 ← Google Apps Script (código principal)
 ├── package.json              ← Dados do projeto
 ├── .gitignore                ← Arquivos ignorados
+├── CONFIGURAR_GOOGLE_OAUTH.md ← Instruções de OAuth
 └── README.md                 ← Este arquivo
 ```
+
+---
+
+## 🔄 Sincronização com GitHub
+
+### Clonar o repositório
+```bash
+git clone https://github.com/niltonmachado77-rso/gestao_insumos.git
+cd gestao_insumos
+```
+
+### Fazer alterações e enviar
+```bash
+# Ver alterações pendentes
+git status
+
+# Adicionar todos os arquivos modificados
+git add .
+
+# Criar commit com mensagem descritiva
+git commit -m "Descrição do que foi alterado"
+
+# Enviar para o GitHub
+git push origin main
+```
+
+### Puxar atualizações do GitHub
+```bash
+git pull origin main
+```
+
+### Fluxo completo recomendado
+```bash
+git pull origin main          # 1. Atualizar com mudanças remotas
+# ... editar arquivos ...
+git add .                     # 2. Stage das alterações
+git commit -m "Mensagem"      # 3. Commitar
+git push origin main          # 4. Enviar para GitHub
+```
+
+> **Importante:** Sempre fazer `git pull` antes de começar a editar para evitar conflitos.
+
+---
+
+## 🏫 Agrupamento de Escolas — Secretaria de Educação (SecEdu)
+
+### Regra de Agrupamento
+
+Todas as escolas/unidades da Secretaria de Educação que possuem o prefixo **`SecEdu - `** no nome são automaticamente agrupadas em uma única opção chamada **"Secretaria de Educação"** na interface.
+
+**Não é hardcode.** O agrupamento é feito dinamicamente pelo prefixo. Qualquer escola adicionada com prefixo `SecEdu - ` será automaticamente agrupada.
+
+### Como funciona
+
+1. **Array `ESCOLAS`** — Lista contendo todos os nomes de escolas/unidades (definido no `gestao_insumos_v3.html`)
+2. **Função `isSecEdu(nome)`** — Verifica se um nome começa com `SecEdu - ` (case-insensitive) ou se corresponde ao label `"Secretaria de Educação"`
+3. **Função `getEscolasExibicao()`** — Percorre o array e substitui todas as entradas `SecEdu - *` por uma única entrada `"Secretaria de Educação"`
+4. **Função `matchEscola(escolaSolic, escolaUser)`** — Ao comparar solicitações, se o usuário selecionou `"Secretaria de Educação"`, aceita qualquer solicitação de escola com prefixo `SecEdu - `
+
+### Exemplos
+
+| Nome na lista | Resultado na interface |
+|---|---|
+| SecEdu - Neila | → **Secretaria de Educação** (agrupado) |
+| SecEdu - Luciana | → (agrupado, não aparece separado) |
+| SecEdu - Dir.Formação (Joelma) | → (agrupado, não aparece separado) |
+| SecEdu - Núcleos | → (agrupado, não aparece separado) |
+| EM Wilson Lins de Albuquerque | → EM Wilson Lins de Albuquerque (individual) |
+
+### Para adicionar novo departamento
+
+Basta incluir no array `ESCOLAS` com o prefixo `SecEdu - `:
+
+```javascript
+var ESCOLAS = [
+  "SecEdu - Neila",
+  "SecEdu - Luciana",
+  "SecEdu - Novo Departamento",  // ← Novo dept será automaticamente agrupado
+  // ... outras escolas
+];
+```
+
+### Regra de filtro por escola (solicitante)
+
+Quando um solicitante seleciona **"Secretaria de Educação"** como sua escola, ele visualiza **todas as solicitações** de qualquer unidade com prefixo `SecEdu - `. As regras são:
+
+| Solicitante seleciona | Visualiza solicitações de |
+|---|---|
+| Secretaria de Educação | Todas as escolas com prefixo `SecEdu - ` |
+| Prefeitura | Apenas escola "Prefeitura" |
+| EM Wilson Lins de Albuquerque | Apenas essa escola específica |
 
 ---
 
